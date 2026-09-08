@@ -1,0 +1,15 @@
+[build]
+  command = "node scripts/generate-pages.js"
+  publish = "site/public"
+
+[build.environment]
+  # Override in the Netlify UI (Site settings -> Environment variables) once the
+  # real Netlify site URL is known, so generated page_url values are correct.
+  SITE_BASE_URL = "https://cr-outreach.netlify.app"
+  SENDER_NAME = "Kevin Lackey"
+  SENDER_TITLE = "CyRisk"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 404

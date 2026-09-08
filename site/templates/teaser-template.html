@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{{FIRM_NAME}} — Privacy Litigation Exposure Preview | CyRisk</title>
+<style>
+  :root{
+    --ink:#12161c; --sub:#4b5563; --bg:#ffffff; --panel:#f7f8fa; --line:#e5e7eb;
+    --accent:#c02741; --accent-ink:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.5;}
+  .wrap{max-width:720px;margin:0 auto;padding:56px 24px 80px;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em;color:var(--accent);font-size:14px;text-transform:uppercase;margin-bottom:36px;}
+  .brand .dot{width:8px;height:8px;background:var(--accent);border-radius:2px;}
+  h1{font-size:28px;line-height:1.25;margin:0 0 8px;}
+  .prepared-for{color:var(--sub);font-size:14px;margin-bottom:28px;}
+  p{color:var(--ink);font-size:16px;}
+  .lede{color:var(--sub);font-size:17px;margin-bottom:32px;}
+  .findings{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:28px 0 32px;}
+  .finding{padding:18px 20px;border-bottom:1px solid var(--line);}
+  .finding:last-child{border-bottom:none;}
+  .finding .tag{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);background:rgba(192,39,65,.08);padding:3px 8px;border-radius:999px;margin-bottom:8px;}
+  .finding h3{font-size:15px;margin:0 0 4px;}
+  .finding p{font-size:14px;color:var(--sub);margin:0;}
+  .cta{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;margin:32px 0;}
+  .cta h2{font-size:17px;margin:0 0 8px;}
+  .cta p{font-size:14px;color:var(--sub);margin:0;}
+  .signoff{margin-top:40px;font-size:15px;}
+  .signoff .name{font-weight:700;}
+  .foot{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:#9aa1ab;font-size:12px;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span>CyRisk Insight Engine</div>
+
+    <h1>What a plaintiff's expert would find on a target site — in about 90 seconds.</h1>
+    <div class="prepared-for">Prepared for {{FIRST_NAME}} · {{FIRM_NAME}}</div>
+
+    <p class="lede">Insight Engine runs an outside-in scan of any domain — a client, a prospective client, or an adverse party — and returns the exact technical evidence behind today's CIPA, VPPA, and CCPA/CPRA tracking claims: what fired, when, and where it went.</p>
+
+    <div class="findings">
+      <div class="finding">
+        <span class="tag">Pattern we see often</span>
+        <h3>Pixel activity before consent or after "Reject All"</h3>
+        <p>Advertising or analytics pixels firing prior to affirmative consent, or continuing after an opt-out — the fact pattern behind most active wiretapping/CIPA filings.</p>
+      </div>
+      <div class="finding">
+        <span class="tag">Pattern we see often</span>
+        <h3>Session replay &amp; input monitoring</h3>
+        <p>Interaction-recording or keystroke-capture tools running inside authenticated areas or on forms, before a visitor submits anything.</p>
+      </div>
+      <div class="finding">
+        <span class="tag">Pattern we see often</span>
+        <h3>Data-broker &amp; identity-resolution transmission</h3>
+        <p>Identifiers passed to ad-tech or data-broker endpoints without a functioning Do-Not-Sell/Share mechanism.</p>
+      </div>
+    </div>
+
+    <div class="cta">
+      <h2>Send us one URL and we'll show you what it turns up.</h2>
+      <p>No pitch deck — just reply with a domain you're curious about (a client's site, a matter, a due-diligence target) and we'll walk you through the findings and how they map to current privacy litigation theories.</p>
+    </div>
+
+    <div class="signoff">
+      Reply anytime,<br>
+      <span class="name">{{SENDER_NAME}}</span><br>
+      {{SENDER_TITLE}}, CyRisk
+    </div>
+
+    <div class="foot">CyRisk Insight Engine · Outside-in, unauthenticated assessment · This page was prepared for {{FIRM_NAME}} and is not intended for redistribution.</div>
+  </div>
+</body>
+</html>
