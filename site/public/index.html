@@ -481,6 +481,29 @@
       box-shadow: var(--shadow);
     }
 
+    .lead-toolbar {
+      display: grid;
+      grid-template-columns: 1.4fr repeat(3, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .lead-toolbar .field {
+      margin-bottom: 0;
+    }
+
+    .lead-toolbar select,
+    .lead-selection-bar select {
+      min-width: 0;
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: white;
+      color: var(--text);
+      font-size: 14px;
+    }
+
     .lead-selection-bar {
       display: flex;
       flex-wrap: wrap;
@@ -491,18 +514,93 @@
 
     .lead-selection-bar select {
       min-width: 220px;
-      padding: 10px 11px;
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      background: white;
-      color: var(--text);
-      font-size: 14px;
+      width: auto;
     }
 
     .selection-count {
       color: var(--muted);
       font-size: 13px;
       margin-right: auto;
+    }
+
+    .lead-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .lead-pager {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-chip {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      background: var(--panel-soft);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .status-chip.needs_review,
+    .status-chip.needs-review {
+      background: #fff4e5;
+      color: #9a6700;
+      border-color: #f0d7a8;
+    }
+
+    .status-chip.new {
+      background: var(--green-soft);
+      color: var(--green);
+      border-color: transparent;
+    }
+
+    .status-chip.queued,
+    .status-chip.assigned {
+      background: #eef4ff;
+      color: #274690;
+      border-color: #c9d7f5;
+    }
+
+    .mini-campaign-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .danger-btn {
+      border-color: #f0c2c2;
+      color: #9b1c1c;
+      background: #fff5f5;
+    }
+
+    .danger-btn:hover {
+      background: #ffe8e8;
+    }
+
+    @media (max-width: 900px) {
+      .lead-toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .lead-toolbar {
+        grid-template-columns: 1fr;
+      }
     }
 
     .hub-heading {
@@ -914,13 +1012,44 @@
     </section>
 
     <section id="leads-hub" class="card panel" style="margin-bottom:24px;">
-      <div class="hub-heading"><h2>Leads Hub</h2><span class="info-tip" tabindex="0" role="img" aria-label="About the leads hub" data-tip="Review all saved leads, their source, status, and the campaigns they belong to. Local imported leads appear here after saving.">i</span></div>
-      <div class="field" style="max-width:360px;">
-        <label for="leadHubFilter">Filter leads</label>
-        <input id="leadHubFilter" type="search" placeholder="Search name, email, firm, or status" />
+      <div class="hub-heading"><h2>Leads Hub</h2><span class="info-tip" tabindex="0" role="img" aria-label="About the leads hub" data-tip="Search, filter, and sort saved leads so you can find the right prospects and assign them to a campaign.">i</span></div>
+      <div class="lead-toolbar">
+        <div class="field">
+          <label for="leadHubFilter">Search</label>
+          <input id="leadHubFilter" type="search" placeholder="Name, email, title, firm, city, or state" />
+        </div>
+        <div class="field">
+          <label for="leadStatusFilter">Status</label>
+          <select id="leadStatusFilter">
+            <option value="">All statuses</option>
+            <option value="new">New</option>
+            <option value="needs_review">Needs review</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="leadAssignmentFilter">Assignment</label>
+          <select id="leadAssignmentFilter">
+            <option value="">All leads</option>
+            <option value="unassigned">Unassigned only</option>
+            <option value="assigned">Assigned to any campaign</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="leadSortBy">Sort by</label>
+          <select id="leadSortBy">
+            <option value="name-asc">Name A–Z</option>
+            <option value="name-desc">Name Z–A</option>
+            <option value="firm-asc">Firm A–Z</option>
+            <option value="firm-desc">Firm Z–A</option>
+            <option value="status-asc">Status A–Z</option>
+            <option value="email-asc">Email A–Z</option>
+            <option value="state-asc">State A–Z</option>
+            <option value="newest">Newest first</option>
+          </select>
+        </div>
       </div>
       <div class="lead-selection-bar">
-        <button id="selectAllLeadsBtn" class="secondary-btn" type="button">Select all visible</button>
+        <button id="selectAllLeadsBtn" class="secondary-btn" type="button">Select all matching</button>
         <button id="clearLeadSelectionBtn" class="secondary-btn" type="button">Clear selection</button>
         <select id="assignCampaignSelect" aria-label="Campaign to assign selected leads to">
           <option value="">Choose campaign...</option>
@@ -929,11 +1058,19 @@
         <span id="selectionCount" class="selection-count">0 leads selected</span>
         <span id="assignmentHint" class="selection-count">Save leads before assigning them to a campaign.</span>
       </div>
+      <div class="lead-meta-row">
+        <span id="leadFilterSummary">0 leads shown</span>
+        <div class="lead-pager">
+          <button id="leadPrevPageBtn" class="secondary-btn" type="button">Previous</button>
+          <span id="leadPageLabel">Page 1</span>
+          <button id="leadNextPageBtn" class="secondary-btn" type="button">Next</button>
+        </div>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th><input id="selectAllLeadsCheckbox" type="checkbox" aria-label="Select all visible leads"></th>
+              <th><input id="selectAllLeadsCheckbox" type="checkbox" aria-label="Select all leads on this page"></th>
               <th>First name</th>
               <th>Last name</th>
               <th>Email</th>
@@ -941,13 +1078,14 @@
               <th>Firm</th>
               <th>City</th>
               <th>State</th>
+              <th>Status</th>
               <th>Campaigns</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody id="leadTableBody">
             <tr>
-              <td colspan="10" class="muted">No lead CSV uploaded yet.</td>
+              <td colspan="11" class="muted">No lead CSV uploaded yet.</td>
             </tr>
           </tbody>
         </table>
@@ -1006,6 +1144,13 @@
     const selectionCount = document.getElementById('selectionCount');
     const assignmentHint = document.getElementById('assignmentHint');
     const leadHubFilterInput = document.getElementById('leadHubFilter');
+    const leadStatusFilterInput = document.getElementById('leadStatusFilter');
+    const leadAssignmentFilterInput = document.getElementById('leadAssignmentFilter');
+    const leadSortByInput = document.getElementById('leadSortBy');
+    const leadFilterSummary = document.getElementById('leadFilterSummary');
+    const leadPrevPageBtn = document.getElementById('leadPrevPageBtn');
+    const leadNextPageBtn = document.getElementById('leadNextPageBtn');
+    const leadPageLabel = document.getElementById('leadPageLabel');
     const launchList = document.getElementById('launchList');
     const controlIcp = document.getElementById('controlIcp');
     const controlCta = document.getElementById('controlCta');
@@ -1014,6 +1159,7 @@
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
     const DRAFTS_KEY = 'cyrisk-outreach-drafts';
+    const LEAD_PAGE_SIZE = 50;
     let currentLeads = [];
     let currentDrafts = {};
     let currentCampaignId = '';
@@ -1024,6 +1170,10 @@
     let apolloLastSearchKey = '';
     let selectedLeadEmails = new Set();
     let leadHubFilter = '';
+    let leadStatusFilter = '';
+    let leadAssignmentFilter = '';
+    let leadSortBy = 'name-asc';
+    let leadPage = 1;
     let editingLeadEmail = '';
     let referenceDocuments = [];
 
@@ -1267,19 +1417,101 @@
         });
     }
 
-    function renderRows(leads) {
-      currentLeads = leads;
-      selectedLeadEmails = new Set([...selectedLeadEmails].filter((email) => leads.some((lead) => (lead.email || '').trim().toLowerCase() === email)));
-      const visibleLeads = leads.filter((lead) => {
+    function formatLeadStatus(status) {
+      const value = String(status || 'new').trim().toLowerCase();
+      if (value === 'needs_review') return 'Needs review';
+      if (!value) return 'New';
+      return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function leadEmailKey(lead) {
+      return (lead.email || '').trim().toLowerCase();
+    }
+
+    function leadCampaignNames(lead) {
+      return (lead.campaign_leads || [])
+        .map((membership) => membership.campaigns?.name || '')
+        .filter(Boolean);
+    }
+
+    function getFilteredSortedLeads() {
+      const filtered = currentLeads.filter((lead) => {
+        const status = String(lead.status || 'new').toLowerCase();
+        const memberships = lead.campaign_leads || [];
+        const assigned = memberships.length > 0;
+
+        if (leadStatusFilter && status !== leadStatusFilter) return false;
+        if (leadAssignmentFilter === 'unassigned' && assigned) return false;
+        if (leadAssignmentFilter === 'assigned' && !assigned) return false;
+        if (leadAssignmentFilter.startsWith('campaign:') && !memberships.some((membership) => membership.campaign_id === leadAssignmentFilter.slice(9))) {
+          return false;
+        }
+
         if (!leadHubFilter) return true;
-        const haystack = [lead.first_name, lead.last_name, lead.email, lead.firm_name, lead.status].join(' ').toLowerCase();
+        const haystack = [
+          lead.first_name,
+          lead.last_name,
+          lead.email,
+          lead.title,
+          lead.firm_name,
+          lead.city,
+          lead.state,
+          lead.status,
+          formatLeadStatus(lead.status),
+          ...leadCampaignNames(lead)
+        ].join(' ').toLowerCase();
         return haystack.includes(leadHubFilter);
       });
 
+      const sorted = [...filtered].sort((a, b) => {
+        const nameA = `${a.first_name || ''} ${a.last_name || ''}`.trim().toLowerCase();
+        const nameB = `${b.first_name || ''} ${b.last_name || ''}`.trim().toLowerCase();
+        const firmA = (a.firm_name || '').toLowerCase();
+        const firmB = (b.firm_name || '').toLowerCase();
+        const statusA = (a.status || '').toLowerCase();
+        const statusB = (b.status || '').toLowerCase();
+        const emailA = (a.email || '').toLowerCase();
+        const emailB = (b.email || '').toLowerCase();
+        const stateA = (a.state || '').toLowerCase();
+        const stateB = (b.state || '').toLowerCase();
+        const createdA = Date.parse(a.created_at || a.source_imported_at || 0) || 0;
+        const createdB = Date.parse(b.created_at || b.source_imported_at || 0) || 0;
+
+        switch (leadSortBy) {
+          case 'name-desc': return nameB.localeCompare(nameA);
+          case 'firm-asc': return firmA.localeCompare(firmB) || nameA.localeCompare(nameB);
+          case 'firm-desc': return firmB.localeCompare(firmA) || nameA.localeCompare(nameB);
+          case 'status-asc': return statusA.localeCompare(statusB) || nameA.localeCompare(nameB);
+          case 'email-asc': return emailA.localeCompare(emailB);
+          case 'state-asc': return stateA.localeCompare(stateB) || nameA.localeCompare(nameB);
+          case 'newest': return createdB - createdA || nameA.localeCompare(nameB);
+          case 'name-asc':
+          default:
+            return nameA.localeCompare(nameB);
+        }
+      });
+
+      return sorted;
+    }
+
+    function renderRows(leads) {
+      currentLeads = leads;
+      selectedLeadEmails = new Set([...selectedLeadEmails].filter((email) => leads.some((lead) => leadEmailKey(lead) === email)));
+      const visibleLeads = getFilteredSortedLeads();
+      const totalPages = Math.max(1, Math.ceil(visibleLeads.length / LEAD_PAGE_SIZE));
+      if (leadPage > totalPages) leadPage = totalPages;
+      if (leadPage < 1) leadPage = 1;
+      const pageStart = (leadPage - 1) * LEAD_PAGE_SIZE;
+      const pageLeads = visibleLeads.slice(pageStart, pageStart + LEAD_PAGE_SIZE);
+
       if (!leads.length) {
-        leadTableBody.innerHTML = '<tr><td colspan="10" class="muted">No lead CSV uploaded yet.</td></tr>';
+        leadTableBody.innerHTML = '<tr><td colspan="11" class="muted">No lead CSV uploaded yet.</td></tr>';
         leadCountEl.textContent = '0';
         readyCountEl.textContent = '0';
+        leadFilterSummary.textContent = '0 leads shown';
+        leadPageLabel.textContent = 'Page 1';
+        leadPrevPageBtn.disabled = true;
+        leadNextPageBtn.disabled = true;
         updateSelectionCount();
         return;
       }
@@ -1287,37 +1519,48 @@
       const valid = leads.filter((lead) => lead.email && lead.first_name && lead.firm_name);
       leadCountEl.textContent = String(leads.length);
       readyCountEl.textContent = String(valid.length);
+      leadFilterSummary.textContent = visibleLeads.length === leads.length
+        ? `Showing ${pageLeads.length ? pageStart + 1 : 0}–${pageStart + pageLeads.length} of ${leads.length} leads`
+        : `Showing ${pageLeads.length ? pageStart + 1 : 0}–${pageStart + pageLeads.length} of ${visibleLeads.length} matching (${leads.length} total)`;
+      leadPageLabel.textContent = `Page ${leadPage} of ${totalPages}`;
+      leadPrevPageBtn.disabled = leadPage <= 1;
+      leadNextPageBtn.disabled = leadPage >= totalPages;
 
-      leadTableBody.innerHTML = visibleLeads.slice(0, 15).map((lead) => `
+      if (!visibleLeads.length) {
+        leadTableBody.innerHTML = '<tr><td colspan="11" class="muted">No leads match the current filters.</td></tr>';
+        updateSelectionCount();
+        return;
+      }
+
+      leadTableBody.innerHTML = pageLeads.map((lead) => {
+        const statusValue = String(lead.status || 'new').toLowerCase();
+        return `
         <tr>
-          <td><input class="lead-select" type="checkbox" data-lead-email="${escapeHtml(lead.email || '')}" aria-label="Select ${escapeHtml(lead.email || 'lead')}" ${selectedLeadEmails.has((lead.email || '').trim().toLowerCase()) ? 'checked' : ''}></td>
-          <td>${lead.first_name || '-'}</td>
-          <td>${lead.last_name || '-'}</td>
-          <td>${lead.email || '-'}</td>
-          <td>${lead.title || '-'}</td>
-          <td>${lead.firm_name || '-'}</td>
-          <td>${lead.city || '-'}</td>
-          <td>${lead.state || '-'}</td>
-          <td>${(lead.campaign_leads || []).map((membership) => escapeHtml(membership.campaigns?.name || 'Campaign')).join(', ') || '<span class="muted">Unassigned</span>'}</td>
+          <td><input class="lead-select" type="checkbox" data-lead-email="${escapeHtml(lead.email || '')}" aria-label="Select ${escapeHtml(lead.email || 'lead')}" ${selectedLeadEmails.has(leadEmailKey(lead)) ? 'checked' : ''}></td>
+          <td>${escapeHtml(lead.first_name || '-')}</td>
+          <td>${escapeHtml(lead.last_name || '-')}</td>
+          <td>${escapeHtml(lead.email || '-')}</td>
+          <td>${escapeHtml(lead.title || '-')}</td>
+          <td>${escapeHtml(lead.firm_name || '-')}</td>
+          <td>${escapeHtml(lead.city || '-')}</td>
+          <td>${escapeHtml(lead.state || '-')}</td>
+          <td><span class="status-chip ${escapeHtml(statusValue)}">${escapeHtml(formatLeadStatus(lead.status))}</span></td>
+          <td>${leadCampaignNames(lead).map((name) => escapeHtml(name)).join(', ') || '<span class="muted">Unassigned</span>'}</td>
           <td><button class="secondary-btn edit-lead-btn" type="button" data-lead-email="${escapeHtml(lead.email || '')}">Edit</button></td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
 
-      if (visibleLeads.length > 15) {
-        const extraRow = document.createElement('tr');
-        extraRow.innerHTML = '<td colspan="10" class="muted">+ ' + (visibleLeads.length - 15) + ' more leads match</td>';
-        leadTableBody.appendChild(extraRow);
-      }
       updateSelectionCount();
     }
 
     function updateSelectionCount() {
       selectionCount.textContent = `${selectedLeadEmails.size} lead${selectedLeadEmails.size === 1 ? '' : 's'} selected`;
-      const visibleLeads = currentLeads.filter((lead) => {
-        if (!leadHubFilter) return true;
-        return [lead.first_name, lead.last_name, lead.email, lead.firm_name, lead.status].join(' ').toLowerCase().includes(leadHubFilter);
-      }).slice(0, 15);
-      selectAllLeadsCheckbox.checked = visibleLeads.length > 0 && visibleLeads.every((lead) => selectedLeadEmails.has((lead.email || '').trim().toLowerCase()));
+      const pageEmails = getFilteredSortedLeads()
+        .slice((leadPage - 1) * LEAD_PAGE_SIZE, leadPage * LEAD_PAGE_SIZE)
+        .map(leadEmailKey)
+        .filter(Boolean);
+      selectAllLeadsCheckbox.checked = pageEmails.length > 0 && pageEmails.every((email) => selectedLeadEmails.has(email));
       if (!currentLeads.length) {
         assignmentHint.textContent = 'Upload or add leads, then click Save leads before assigning them.';
       } else if (!selectedLeadEmails.size) {
@@ -1332,6 +1575,19 @@
     function populateCampaignSelect() {
       assignCampaignSelect.innerHTML = '<option value="">Choose campaign...</option>' + savedCampaigns.map((campaign) => `<option value="${campaign.id}">${escapeHtml(campaign.name || 'Untitled campaign')}</option>`).join('');
       if (currentCampaignId) assignCampaignSelect.value = currentCampaignId;
+
+      const previousAssignment = leadAssignmentFilterInput.value;
+      leadAssignmentFilterInput.innerHTML = [
+        '<option value="">All leads</option>',
+        '<option value="unassigned">Unassigned only</option>',
+        '<option value="assigned">Assigned to any campaign</option>',
+        ...savedCampaigns.map((campaign) => `<option value="campaign:${campaign.id}">In: ${escapeHtml(campaign.name || 'Untitled campaign')}</option>`)
+      ].join('');
+      leadAssignmentFilterInput.value = [...leadAssignmentFilterInput.options].some((option) => option.value === previousAssignment)
+        ? previousAssignment
+        : '';
+      leadAssignmentFilter = leadAssignmentFilterInput.value;
+      if (currentLeads.length) renderRows(currentLeads);
     }
 
     function renderLaunchQueue() {
@@ -1370,6 +1626,9 @@
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Could not assign leads');
+        selectedLeadEmails.clear();
+        await loadLeadHub();
+        await loadSavedCampaigns();
         setStatus(`Assigned ${result.assigned} selected leads to the campaign.`, 'success');
       } catch (error) {
         setStatus(error.message || 'Could not assign leads.', 'error');
@@ -1540,10 +1799,41 @@
             <div class="tag">${(campaign.status || 'draft')}</div>
             ${preview}
             <p><strong>Launch:</strong> ${latestJob ? `${latestJob.platform} / ${latestJob.status}` : 'Not prepared'}</p>
-            <button class="secondary-btn review-campaign-btn" type="button" data-campaign-index="${items.indexOf(campaign)}">Review / relaunch</button>
+            <div class="mini-campaign-actions">
+              <button class="secondary-btn review-campaign-btn" type="button" data-campaign-index="${items.indexOf(campaign)}">Review / relaunch</button>
+              <button class="secondary-btn danger-btn delete-campaign-btn" type="button" data-campaign-id="${escapeHtml(campaign.id || '')}" data-campaign-name="${escapeHtml(campaign.name || 'Untitled campaign')}">Delete</button>
+            </div>
           </article>
         `;
       }).join('');
+    }
+
+    async function deleteCampaign(campaignId, campaignName) {
+      if (!campaignId) {
+        setStatus('That campaign cannot be deleted yet because it has no saved ID.', 'error');
+        return;
+      }
+
+      const confirmed = window.confirm(`Delete "${campaignName || 'this campaign'}"? Assigned leads stay in Leads Hub, but campaign copy and launch jobs for this campaign will be removed.`);
+      if (!confirmed) return;
+
+      setStatus('Deleting campaign...', '');
+      try {
+        const response = await fetch('/.netlify/functions/delete-campaign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaignId })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not delete campaign');
+
+        if (currentCampaignId === campaignId) resetCampaignBuilder();
+        await loadSavedCampaigns();
+        await loadLeadHub();
+        setStatus(`Deleted campaign${result.name ? `: ${result.name}` : ''}.`, 'success');
+      } catch (error) {
+        setStatus(error.message || 'Could not delete campaign.', 'error');
+      }
     }
 
     function reviewCampaign(index) {
@@ -1827,20 +2117,19 @@
       if (button) editLead(button.dataset.leadEmail);
     });
     selectAllLeadsCheckbox.addEventListener('change', () => {
-      currentLeads.filter((lead) => {
-        if (!leadHubFilter) return true;
-        return [lead.first_name, lead.last_name, lead.email, lead.firm_name, lead.status].join(' ').toLowerCase().includes(leadHubFilter);
-      }).slice(0, 15).forEach((lead) => {
-        const email = (lead.email || '').trim().toLowerCase();
-        if (!email) return;
-        if (selectAllLeadsCheckbox.checked) selectedLeadEmails.add(email);
-        else selectedLeadEmails.delete(email);
-      });
+      getFilteredSortedLeads()
+        .slice((leadPage - 1) * LEAD_PAGE_SIZE, leadPage * LEAD_PAGE_SIZE)
+        .forEach((lead) => {
+          const email = leadEmailKey(lead);
+          if (!email) return;
+          if (selectAllLeadsCheckbox.checked) selectedLeadEmails.add(email);
+          else selectedLeadEmails.delete(email);
+        });
       renderRows(currentLeads);
     });
     selectAllLeadsBtn.addEventListener('click', () => {
-      currentLeads.slice(0, 15).forEach((lead) => {
-        const email = (lead.email || '').trim().toLowerCase();
+      getFilteredSortedLeads().forEach((lead) => {
+        const email = leadEmailKey(lead);
         if (email) selectedLeadEmails.add(email);
       });
       renderRows(currentLeads);
@@ -1853,6 +2142,31 @@
     assignCampaignSelect.addEventListener('change', updateSelectionCount);
     leadHubFilterInput.addEventListener('input', () => {
       leadHubFilter = leadHubFilterInput.value.trim().toLowerCase();
+      leadPage = 1;
+      renderRows(currentLeads);
+    });
+    leadStatusFilterInput.addEventListener('change', () => {
+      leadStatusFilter = leadStatusFilterInput.value;
+      leadPage = 1;
+      renderRows(currentLeads);
+    });
+    leadAssignmentFilterInput.addEventListener('change', () => {
+      leadAssignmentFilter = leadAssignmentFilterInput.value;
+      leadPage = 1;
+      renderRows(currentLeads);
+    });
+    leadSortByInput.addEventListener('change', () => {
+      leadSortBy = leadSortByInput.value || 'name-asc';
+      leadPage = 1;
+      renderRows(currentLeads);
+    });
+    leadPrevPageBtn.addEventListener('click', () => {
+      if (leadPage <= 1) return;
+      leadPage -= 1;
+      renderRows(currentLeads);
+    });
+    leadNextPageBtn.addEventListener('click', () => {
+      leadPage += 1;
       renderRows(currentLeads);
     });
     searchApolloBtn.addEventListener('click', () => withButtonBusy(searchApolloBtn, searchApollo, 'Searching Apollo...'));
@@ -1868,8 +2182,16 @@
     saveCampaignBtn.addEventListener('click', () => withButtonBusy(saveCampaignBtn, saveCampaignToSupabase, 'Saving campaign...'));
     prepareLaunchBtn.addEventListener('click', () => withButtonBusy(prepareLaunchBtn, prepareLaunch, 'Preparing launch...'));
     campaignList.addEventListener('click', (event) => {
-      const button = event.target.closest('.review-campaign-btn');
-      if (button) reviewCampaign(Number(button.dataset.campaignIndex));
+      const reviewButton = event.target.closest('.review-campaign-btn');
+      if (reviewButton) {
+        reviewCampaign(Number(reviewButton.dataset.campaignIndex));
+        return;
+      }
+
+      const deleteButton = event.target.closest('.delete-campaign-btn');
+      if (deleteButton) {
+        withButtonBusy(deleteButton, () => deleteCampaign(deleteButton.dataset.campaignId, deleteButton.dataset.campaignName), 'Deleting...');
+      }
     });
 
     const savedDrafts = localStorage.getItem(DRAFTS_KEY);
