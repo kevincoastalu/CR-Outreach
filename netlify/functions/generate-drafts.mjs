@@ -17,6 +17,8 @@ export const handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     const leads = Array.isArray(body.leads) ? body.leads : [];
     const segment = body.segment || 'privacy litigators and privacy compliance counsel';
+    const cta = body.cta || 'Reply with a domain or matter they want checked.';
+    const scanPolicy = body.scanPolicy || 'Do not pre-scan the recipient organization';
 
     if (!leads.length) {
       return { statusCode: 400, body: JSON.stringify({ error: 'No leads provided' }) };
@@ -30,7 +32,8 @@ export const handler = async (event) => {
       Company: CyRisk
       Product: Insight Engine
       Goal: Get a reply from lawyers with interest in privacy litigation, privacy compliance, or data-security risk.
-      CTA: Reply with a domain or matter they want checked.
+      CTA: ${cta}
+      Scan policy: ${scanPolicy}
       Tone: concise, credible, non-pushy, professional.
       Avoid: spammy language, exaggerated claims, scheduling links.
       Use only these Apollo merge fields when personalization is needed: {{first_name}}, {{firm_name}}, {{page_link}}, {{sender_name}}.

@@ -697,14 +697,14 @@
         </ul>
       </div>
 
-      <div class="card panel">
-        <h2>Campaign control</h2>
+      <div class="card panel" id="campaign-control">
+        <h2>Campaign control <span class="info-tip" tabindex="0" role="img" aria-label="About campaign controls" data-tip="These guardrails belong to this campaign. Change them when the audience, offer, or personalization strategy changes.">i</span></h2>
         <ul class="checklist">
-          <li><span class="dot"></span> ICP: privacy litigators & compliance counsel</li>
-          <li><span class="dot"></span> CTA: reply with a domain or matter of interest</li>
-          <li><span class="dot"></span> No pre-scan of recipient’s own firm</li>
-          <li><span class="dot"></span> Personalized landing pages per lead</li>
-          <li><span class="dot"></span> Apollo merge fields: first_name, firm_name, page_url <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo merge fields" data-tip="These placeholders are filled by Apollo at send time from each contact's mapped fields.">i</span></li>
+          <li><span class="dot"></span> <strong>ICP:</strong> <span id="controlIcp">Privacy litigators</span></li>
+          <li><span class="dot"></span> <strong>CTA:</strong> <span id="controlCta">Reply with a domain or matter of interest</span></li>
+          <li><span class="dot"></span> <strong>Scan policy:</strong> <span id="controlScanPolicy">Do not pre-scan the recipient organization</span></li>
+          <li><span class="dot"></span> <strong>Personalization:</strong> <span id="controlPersonalization">Landing page per lead</span></li>
+          <li><span class="dot"></span> <strong>Merge fields:</strong> first_name, firm_name, page_url <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo merge fields" data-tip="These placeholders are filled by Apollo at send time from each contact's mapped fields.">i</span></li>
         </ul>
       </div>
     </section>
@@ -786,6 +786,10 @@
             <label for="campaignObjective">Objective</label>
             <textarea id="campaignObjective">Generate qualified replies from privacy-focused law firms interested in technical evidence behind CIPA, VPPA, and CCPA/CPRA claims.</textarea>
           </div>
+          <div class="field">
+            <label for="campaignCta">Call to action</label>
+            <textarea id="campaignCta">Reply with a domain or matter of interest.</textarea>
+          </div>
           <div class="action-row">
             <button id="saveCampaignBtn" class="primary-btn" type="button">Save campaign</button>
           </div>
@@ -809,6 +813,22 @@
           <div class="field">
             <label for="senderMailbox">Sending mailbox</label>
             <input id="senderMailbox" type="email" placeholder="sender@company.com" />
+          </div>
+          <div class="field">
+            <label for="scanPolicy">Scan policy</label>
+            <select id="scanPolicy">
+              <option value="Do not pre-scan the recipient organization">Do not pre-scan the recipient organization</option>
+              <option value="Pre-scan the recipient organization when permitted">Pre-scan the recipient organization when permitted</option>
+              <option value="Use an open offer without a pre-scan">Use an open offer without a pre-scan</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="personalizationMode">Personalization mode</label>
+            <select id="personalizationMode">
+              <option value="Landing page per lead">Landing page per lead</option>
+              <option value="Merge fields only">Merge fields only</option>
+              <option value="Generic campaign copy">Generic campaign copy</option>
+            </select>
           </div>
           <div class="action-row">
             <button id="prepareLaunchBtn" class="secondary-btn" type="button">Approve & prepare launch <span class="info-tip" tabindex="0" role="img" aria-label="About preparing a launch" data-tip="This validates the campaign and creates a paused Apollo or Instantly job. It does not send email yet.">i</span></button>
@@ -886,11 +906,14 @@
     const campaignNameInput = document.getElementById('campaignName');
     const campaignSegmentInput = document.getElementById('campaignSegment');
     const campaignObjectiveInput = document.getElementById('campaignObjective');
+    const campaignCtaInput = document.getElementById('campaignCta');
     const saveCampaignBtn = document.getElementById('saveCampaignBtn');
     const campaignStatusInput = document.getElementById('campaignStatus');
     const campaignList = document.getElementById('campaignList');
     const launchPlatformInput = document.getElementById('launchPlatform');
     const senderMailboxInput = document.getElementById('senderMailbox');
+    const scanPolicyInput = document.getElementById('scanPolicy');
+    const personalizationModeInput = document.getElementById('personalizationMode');
     const prepareLaunchBtn = document.getElementById('prepareLaunchBtn');
     const apolloTitlesInput = document.getElementById('apolloTitles');
     const apolloKeywordsInput = document.getElementById('apolloKeywords');
@@ -908,6 +931,10 @@
     const selectionCount = document.getElementById('selectionCount');
     const leadHubFilterInput = document.getElementById('leadHubFilter');
     const launchList = document.getElementById('launchList');
+    const controlIcp = document.getElementById('controlIcp');
+    const controlCta = document.getElementById('controlCta');
+    const controlScanPolicy = document.getElementById('controlScanPolicy');
+    const controlPersonalization = document.getElementById('controlPersonalization');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
     const DRAFTS_KEY = 'cyrisk-outreach-drafts';
@@ -923,6 +950,13 @@
       apolloStatus.textContent = message || '';
       apolloStatus.className = 'status-message';
       if (type) apolloStatus.classList.add(type);
+    }
+
+    function updateCampaignControls() {
+      controlIcp.textContent = campaignSegmentInput.value || 'Not specified';
+      controlCta.textContent = campaignCtaInput.value || 'Not specified';
+      controlScanPolicy.textContent = scanPolicyInput.value || 'Not specified';
+      controlPersonalization.textContent = personalizationModeInput.value || 'Not specified';
     }
 
     function escapeHtml(value) {
@@ -1257,6 +1291,9 @@
         campaignName: campaignNameInput.value,
         campaignSegment: campaignSegmentInput.value,
         objective: campaignObjectiveInput.value,
+        cta: campaignCtaInput.value,
+        scanPolicy: scanPolicyInput.value,
+        personalizationMode: personalizationModeInput.value,
         drafts: currentDrafts,
         updatedAt: new Date().toISOString()
       }));
@@ -1307,7 +1344,11 @@
       campaignNameInput.value = campaign.name || '';
       campaignObjectiveInput.value = campaign.objective || '';
       campaignSegmentInput.value = campaign.target_segment || campaignSegmentInput.value;
+      campaignCtaInput.value = campaign.cta || campaignCtaInput.value;
+      scanPolicyInput.value = campaign.scan_policy || scanPolicyInput.value;
+      personalizationModeInput.value = campaign.personalization_mode || personalizationModeInput.value;
       campaignStatusInput.value = campaign.status || 'draft';
+      updateCampaignControls();
 
       const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
       const restoredDrafts = {};
@@ -1342,6 +1383,9 @@
         campaignName: campaignNameInput.value,
         objective: campaignObjectiveInput.value,
         segment: campaignSegmentInput.value,
+        cta: campaignCtaInput.value,
+        scanPolicy: scanPolicyInput.value,
+        personalizationMode: personalizationModeInput.value,
         status: campaignStatusInput.value || 'draft',
         drafts: currentDrafts
       };
@@ -1368,6 +1412,7 @@
         campaignStatusInput.value = result.status || 'Saved';
         currentCampaignId = result.id || '';
         saveCampaignDraftsLocally();
+        updateCampaignControls();
         await loadSavedCampaigns();
         setStatus(`Campaign saved with ${result.savedDraftCount || 0} draft variants.`, 'success');
       } catch (error) {
@@ -1456,7 +1501,12 @@
         const response = await fetch('/.netlify/functions/generate-drafts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leads: currentLeads, segment: campaignSegmentInput.value || 'privacy litigators and privacy compliance counsel' })
+          body: JSON.stringify({
+            leads: currentLeads,
+            segment: campaignSegmentInput.value || 'privacy litigators and privacy compliance counsel',
+            cta: campaignCtaInput.value,
+            scanPolicy: scanPolicyInput.value
+          })
         });
 
         const result = await response.json();
@@ -1560,6 +1610,9 @@
         if (parsedDrafts.campaignName) campaignNameInput.value = parsedDrafts.campaignName;
         if (parsedDrafts.campaignSegment) campaignSegmentInput.value = parsedDrafts.campaignSegment;
         if (parsedDrafts.objective) campaignObjectiveInput.value = parsedDrafts.objective;
+        if (parsedDrafts.cta) campaignCtaInput.value = parsedDrafts.cta;
+        if (parsedDrafts.scanPolicy) scanPolicyInput.value = parsedDrafts.scanPolicy;
+        if (parsedDrafts.personalizationMode) personalizationModeInput.value = parsedDrafts.personalizationMode;
         if (parsedDrafts.drafts) renderDrafts(parsedDrafts.drafts);
       } catch (error) {
         console.warn('Could not restore saved drafts', error);
@@ -1569,6 +1622,8 @@
     loadFromStorage();
     loadSavedCampaigns();
     loadLeadHub();
+    [campaignSegmentInput, campaignCtaInput, scanPolicyInput, personalizationModeInput].forEach((input) => input.addEventListener('input', updateCampaignControls));
+    updateCampaignControls();
   </script>
 </body>
 </html>

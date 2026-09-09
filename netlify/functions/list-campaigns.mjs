@@ -14,7 +14,7 @@ export const handler = async (event) => {
 
     const { data, error } = await supabase
       .from('campaigns')
-      .select('id, name, objective, target_segment, status, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)')
+      .select('id, name, objective, target_segment, status, cta, scan_policy, personalization_mode, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)')
       .order('created_at', { ascending: false })
       .limit(12);
 

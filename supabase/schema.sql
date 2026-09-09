@@ -48,6 +48,10 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS apollo_organization_id TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS source_query TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS source_imported_at TIMESTAMPTZ;
 
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cta TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS scan_policy TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS personalization_mode TEXT;
+
 CREATE TABLE IF NOT EXISTS email_drafts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campaign_id UUID REFERENCES campaigns(id) ON DELETE CASCADE,
