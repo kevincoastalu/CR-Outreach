@@ -130,6 +130,40 @@
       text-align: center;
     }
 
+    .manual-lead-form {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .manual-lead-form h3 {
+      margin: 0 0 12px;
+      font-size: 15px;
+    }
+
+    .lead-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .lead-form-grid input {
+      width: 100%;
+      min-width: 0;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: white;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .lead-form-grid input:focus {
+      outline: 2px solid rgba(182, 29, 56, 0.2);
+      border-color: var(--accent);
+    }
+
     input[type="file"] {
       width: 100%;
       padding: 10px 12px;
@@ -459,6 +493,22 @@
         <h2>Lead import</h2>
         <div class="upload-box">
           <input id="csvInput" type="file" accept=".csv,text/csv" />
+          <form id="manualLeadForm" class="manual-lead-form">
+            <h3>Add a lead manually</h3>
+            <div class="lead-form-grid">
+              <input id="manualFirstName" name="first_name" type="text" placeholder="First name" required>
+              <input id="manualLastName" name="last_name" type="text" placeholder="Last name">
+              <input id="manualEmail" name="email" type="email" placeholder="Email address" required>
+              <input id="manualTitle" name="title" type="text" placeholder="Title">
+              <input id="manualFirmName" name="firm_name" type="text" placeholder="Firm name" required>
+              <input id="manualWebsite" name="website" type="url" placeholder="Website">
+              <input id="manualCity" name="city" type="text" placeholder="City">
+              <input id="manualState" name="state" type="text" placeholder="State">
+            </div>
+            <div class="action-row">
+              <button id="addLeadBtn" class="secondary-btn" type="submit">Add lead</button>
+            </div>
+          </form>
           <div class="action-row">
             <button id="saveLeadsBtn" class="primary-btn" type="button">Save leads</button>
             <button id="generateDraftsBtn" class="secondary-btn" type="button">Generate drafts</button>
@@ -589,6 +639,7 @@
     const csvInput = document.getElementById('csvInput');
     const saveLeadsBtn = document.getElementById('saveLeadsBtn');
     const generateDraftsBtn = document.getElementById('generateDraftsBtn');
+    const manualLeadForm = document.getElementById('manualLeadForm');
     const statusMessage = document.getElementById('statusMessage');
     const draftGrid = document.getElementById('draftGrid');
     const campaignNameInput = document.getElementById('campaignName');
@@ -696,6 +747,24 @@
         extraRow.innerHTML = '<td colspan="7" class="muted">+ ' + (leads.length - 15) + ' more leads loaded</td>';
         leadTableBody.appendChild(extraRow);
       }
+    }
+
+    function addManualLead(event) {
+      event.preventDefault();
+      const formData = new FormData(manualLeadForm);
+      const lead = Object.fromEntries(formData.entries());
+      const normalizedEmail = lead.email.trim().toLowerCase();
+
+      if (currentLeads.some((item) => (item.email || '').trim().toLowerCase() === normalizedEmail)) {
+        setStatus('A lead with that email is already loaded.', 'error');
+        return;
+      }
+
+      lead.email = normalizedEmail;
+      renderRows([...currentLeads, lead]);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLeads));
+      manualLeadForm.reset();
+      setStatus(`${lead.first_name} ${lead.last_name || ''}`.trim() + ' added and ready to save.', 'success');
     }
 
     async function saveLeadsToSupabase() {
@@ -886,6 +955,7 @@
 
     saveLeadsBtn.addEventListener('click', saveLeadsToSupabase);
     generateDraftsBtn.addEventListener('click', generateCampaignDrafts);
+    manualLeadForm.addEventListener('submit', addManualLead);
     saveCampaignBtn.addEventListener('click', saveCampaignToSupabase);
 
     const savedDrafts = localStorage.getItem(DRAFTS_KEY);
