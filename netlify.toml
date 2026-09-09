@@ -2,6 +2,9 @@
   command = "node scripts/generate-pages.js"
   publish = "site/public"
 
+[functions]
+  directory = "netlify/functions"
+
 [build.environment]
   # Override in the Netlify UI (Site settings -> Environment variables) once the
   # real Netlify site URL is known, so generated page_url values are correct.
