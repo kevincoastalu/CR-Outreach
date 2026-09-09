@@ -691,7 +691,7 @@
         </div>
         <ul class="checklist">
           <li><span class="dot"></span> Check sender mailbox before launch</li>
-          <li><span class="dot"></span> Confirm Netlify page URL is live</li>
+          <li><span class="dot"></span> Confirm sending mailbox is connected</li>
           <li><span class="dot"></span> Validate lead fields before send</li>
           <li><span class="dot warn"></span> Review final copy and sequence timing</li>
         </ul>
@@ -703,8 +703,8 @@
           <li><span class="dot"></span> <strong>ICP:</strong> <span id="controlIcp">Privacy litigators</span></li>
           <li><span class="dot"></span> <strong>CTA:</strong> <span id="controlCta">Reply with a domain or matter of interest</span></li>
           <li><span class="dot"></span> <strong>Scan policy:</strong> <span id="controlScanPolicy">Do not pre-scan the recipient organization</span></li>
-          <li><span class="dot"></span> <strong>Personalization:</strong> <span id="controlPersonalization">Landing page per lead</span></li>
-          <li><span class="dot"></span> <strong>Merge fields:</strong> first_name, firm_name, page_url <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo merge fields" data-tip="These placeholders are filled by Apollo at send time from each contact's mapped fields.">i</span></li>
+          <li><span class="dot"></span> <strong>Personalization:</strong> <span id="controlPersonalization">Email only</span></li>
+          <li><span class="dot"></span> <strong>Merge fields:</strong> first_name, firm_name <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo merge fields" data-tip="These placeholders are filled by Apollo at send time from each contact's mapped fields.">i</span></li>
         </ul>
       </div>
     </section>
@@ -825,9 +825,10 @@
           <div class="field">
             <label for="personalizationMode">Personalization mode</label>
             <select id="personalizationMode">
-              <option value="Landing page per lead">Landing page per lead</option>
+              <option value="Email only" selected>Email only</option>
               <option value="Merge fields only">Merge fields only</option>
               <option value="Generic campaign copy">Generic campaign copy</option>
+              <option value="Landing page per lead">Landing page per lead (future)</option>
             </select>
           </div>
           <div class="action-row">
@@ -1447,6 +1448,7 @@
             campaignId: currentCampaignId,
             platform: launchPlatformInput.value,
             senderMailbox: senderMailboxInput.value,
+            personalizationMode: personalizationModeInput.value,
             leads: currentLeads,
             drafts: currentDrafts
           })
@@ -1505,7 +1507,8 @@
             leads: currentLeads,
             segment: campaignSegmentInput.value || 'privacy litigators and privacy compliance counsel',
             cta: campaignCtaInput.value,
-            scanPolicy: scanPolicyInput.value
+            scanPolicy: scanPolicyInput.value,
+            personalizationMode: personalizationModeInput.value
           })
         });
 

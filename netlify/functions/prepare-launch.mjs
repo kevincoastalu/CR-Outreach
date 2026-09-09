@@ -18,6 +18,7 @@ export const handler = async (event) => {
     const campaignId = String(body.campaignId || '').trim();
     const platform = String(body.platform || '').trim().toLowerCase();
     const senderMailbox = String(body.senderMailbox || '').trim();
+    const personalizationMode = String(body.personalizationMode || 'Email only').trim();
     const leads = Array.isArray(body.leads) ? body.leads : [];
     const drafts = body.drafts && typeof body.drafts === 'object' ? body.drafts : {};
 
@@ -55,10 +56,10 @@ export const handler = async (event) => {
         last_name: lead.last_name || '',
         email: lead.email,
         title: lead.title || '',
-        firm_name: lead.firm_name || lead.company || '',
-        page_link: lead.page_url || lead.page_link || ''
+        firm_name: lead.firm_name || lead.company || ''
       })),
       steps,
+      personalization_mode: personalizationMode,
       activation_required: true
     };
 

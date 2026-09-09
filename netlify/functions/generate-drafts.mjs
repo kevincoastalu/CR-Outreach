@@ -19,6 +19,7 @@ export const handler = async (event) => {
     const segment = body.segment || 'privacy litigators and privacy compliance counsel';
     const cta = body.cta || 'Reply with a domain or matter they want checked.';
     const scanPolicy = body.scanPolicy || 'Do not pre-scan the recipient organization';
+    const personalizationMode = body.personalizationMode || 'Email only';
 
     if (!leads.length) {
       return { statusCode: 400, body: JSON.stringify({ error: 'No leads provided' }) };
@@ -36,7 +37,9 @@ export const handler = async (event) => {
       Scan policy: ${scanPolicy}
       Tone: concise, credible, non-pushy, professional.
       Avoid: spammy language, exaggerated claims, scheduling links.
-      Use only these Apollo merge fields when personalization is needed: {{first_name}}, {{firm_name}}, {{page_link}}, {{sender_name}}.
+      Personalization mode: ${personalizationMode}
+      Use only these Apollo merge fields when personalization is needed: {{first_name}}, {{firm_name}}, {{sender_name}}.
+      Do not use {{page_link}} because this MVP does not use landing pages.
       Do not use bracket placeholders such as [Name] or [Your Name].
       Return valid JSON with keys: subject1, body1, subject2, body2, subject3, body3.
     `;
