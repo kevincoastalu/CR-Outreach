@@ -56,7 +56,7 @@ window.CyRiskShared = {
   navigateTo(href) {
     const target = String(href || '').trim();
     if (!target) return;
-    window.location.href = target;
+    window.location.assign(target);
   },
 
   bindNavButtons(root = document) {
@@ -64,7 +64,7 @@ window.CyRiskShared = {
       const button = event.target.closest('[data-nav-href]');
       if (!button || button.disabled || button.classList.contains('is-disabled')) return;
       event.preventDefault();
-      this.navigateTo(button.getAttribute('data-nav-href'));
+      window.CyRiskShared.navigateTo(button.getAttribute('data-nav-href'));
     });
   },
 

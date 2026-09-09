@@ -115,6 +115,13 @@
     }
 
     campaignList.addEventListener('click', (event) => {
+      const navBtn = event.target.closest('[data-nav-href]');
+      if (navBtn) {
+        event.preventDefault();
+        window.CyRiskShared.navigateTo(navBtn.getAttribute('data-nav-href'));
+        return;
+      }
+
       const deleteButton = event.target.closest('.delete-campaign-btn');
       if (deleteButton) {
         event.stopPropagation();
