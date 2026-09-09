@@ -28,6 +28,7 @@
       <div class="hub-actions">
         <a class="primary-btn" href="index.html#get-leads">Add leads in workflow</a>
         <a class="secondary-btn" href="campaigns.html">Open Campaigns library</a>
+        <button id="exportMatchingLeadsBtn" class="secondary-btn" type="button">Export matching CSV</button>
       </div>
       <div id="statusMessage" class="status-message" aria-live="polite"></div>
 
@@ -79,6 +80,7 @@
         </select>
         <button id="unassignLeadsBtn" class="secondary-btn" type="button">Remove from campaign</button>
         <button id="deleteLeadsBtn" class="secondary-btn danger-btn" type="button">Delete selected</button>
+        <button id="exportSelectedLeadsBtn" class="secondary-btn" type="button">Export selected CSV</button>
         <span id="selectionCount" class="selection-count">0 leads selected</span>
         <span id="reviewHint" class="selection-count">Select leads, then assign them to a campaign.</span>
       </div>
@@ -180,6 +182,8 @@
     const unassignCampaignSelect = document.getElementById('unassignCampaignSelect');
     const unassignLeadsBtn = document.getElementById('unassignLeadsBtn');
     const deleteLeadsBtn = document.getElementById('deleteLeadsBtn');
+    const exportMatchingLeadsBtn = document.getElementById('exportMatchingLeadsBtn');
+    const exportSelectedLeadsBtn = document.getElementById('exportSelectedLeadsBtn');
     const editAssignCampaignSelect = document.getElementById('editAssignCampaignSelect');
     const editAssignBtn = document.getElementById('editAssignBtn');
     const editLeadCampaigns = document.getElementById('editLeadCampaigns');
@@ -286,6 +290,92 @@
           default: return nameA.localeCompare(nameB);
         }
       });
+    }
+
+    const EXPORT_COLUMNS = [
+      { key: 'first_name', label: 'first_name' },
+      { key: 'last_name', label: 'last_name' },
+      { key: 'email', label: 'email' },
+      { key: 'title', label: 'title' },
+      { key: 'firm_name', label: 'firm_name' },
+      { key: 'website', label: 'website' },
+      { key: 'city', label: 'city' },
+      { key: 'state', label: 'state' },
+      { key: 'country', label: 'country' },
+      { key: 'status', label: 'status' },
+      { key: 'source', label: 'source' },
+      { key: 'firm_keywords', label: 'firm_keywords' },
+      { key: 'page_url', label: 'page_url' },
+      { key: 'apollo_contact_id', label: 'apollo_contact_id' },
+      { key: 'campaigns', label: 'campaigns' }
+    ];
+
+    function csvEscape(value) {
+      const text = String(value == null ? '' : value);
+      if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+      return text;
+    }
+
+    function leadExportRow(lead) {
+      return {
+        first_name: lead.first_name || '',
+        last_name: lead.last_name || '',
+        email: lead.email || '',
+        title: lead.title || '',
+        firm_name: lead.firm_name || lead.company || '',
+        website: lead.website || '',
+        city: lead.city || '',
+        state: lead.state || '',
+        country: lead.country || '',
+        status: lead.status || '',
+        source: lead.source || '',
+        firm_keywords: leadFirmKeywords(lead),
+        page_url: lead.page_url || '',
+        apollo_contact_id: lead.apollo_contact_id || '',
+        campaigns: leadCampaignNames(lead).join('; ')
+      };
+    }
+
+    function downloadLeadsCsv(leads, filenamePrefix) {
+      const rows = (leads || []).map(leadExportRow);
+      const header = EXPORT_COLUMNS.map((column) => csvEscape(column.label)).join(',');
+      const body = rows.map((row) => EXPORT_COLUMNS.map((column) => csvEscape(row[column.key])).join(',')).join('\n');
+      const csv = `${header}\n${body}\n`;
+      const stamp = new Date().toISOString().slice(0, 10);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${filenamePrefix || 'cyrisk-leads'}-${stamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      return rows.length;
+    }
+
+    function exportMatchingLeads() {
+      const leads = getFilteredSortedLeads();
+      if (!leads.length) {
+        setStatus(statusMessage, 'No matching leads to export. Adjust filters or add leads first.', 'error');
+        return;
+      }
+      const count = downloadLeadsCsv(leads, 'cyrisk-leads-matching');
+      setStatus(statusMessage, `Exported ${count} matching lead${count === 1 ? '' : 's'} to CSV.`, 'success');
+    }
+
+    function exportSelectedLeads() {
+      if (!selectedLeadEmails.size) {
+        setStatus(statusMessage, 'Select at least one lead to export, or use Export matching CSV.', 'error');
+        return;
+      }
+      const selected = currentLeads.filter((lead) => selectedLeadEmails.has(leadEmailKey(lead)));
+      if (!selected.length) {
+        setStatus(statusMessage, 'Selected leads are not in the current list. Clear selection and try again.', 'error');
+        return;
+      }
+      const count = downloadLeadsCsv(selected, 'cyrisk-leads-selected');
+      setStatus(statusMessage, `Exported ${count} selected lead${count === 1 ? '' : 's'} to CSV.`, 'success');
     }
 
     function updateSelectionCount() {
@@ -739,6 +829,8 @@
     bulkAssignBtn.addEventListener('click', () => withButtonBusy(bulkAssignBtn, bulkAssignSelected, 'Assigning...'));
     unassignLeadsBtn.addEventListener('click', () => withButtonBusy(unassignLeadsBtn, unassignSelectedLeads, 'Removing...'));
     deleteLeadsBtn.addEventListener('click', () => withButtonBusy(deleteLeadsBtn, deleteSelectedLeads, 'Deleting...'));
+    exportMatchingLeadsBtn?.addEventListener('click', () => withButtonBusy(exportMatchingLeadsBtn, exportMatchingLeads, 'Exporting...'));
+    exportSelectedLeadsBtn?.addEventListener('click', () => withButtonBusy(exportSelectedLeadsBtn, exportSelectedLeads, 'Exporting...'));
     editAssignBtn.addEventListener('click', () => withButtonBusy(editAssignBtn, assignEditingLead, 'Assigning...'));
     crmMissionDismissBtn?.addEventListener('click', () => {
       crmMissionBanner?.classList.remove('is-visible');
