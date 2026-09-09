@@ -185,7 +185,7 @@
         </div>
         <div class="action-row" style="margin:0;">
           <button id="filterUnassignedBtn" class="secondary-btn" type="button">Show unassigned only</button>
-          <a id="openCrmForCampaignBtn" class="secondary-btn" href="leads.html" style="display:inline-block; text-decoration:none;">Browse Leads CRM</a>
+          <button id="openCrmForCampaignBtn" class="secondary-btn" type="button">Browse Leads CRM</button>
         </div>
       </div>
       <div class="lead-toolbar">
@@ -323,12 +323,14 @@
         <p id="assignTargetLabel" class="selection-count" style="margin:0 0 12px;">Campaign target: save this campaign first.</p>
         <div class="lead-selection-bar">
           <button id="assignLeadsBtn" class="primary-btn" type="button">Assign selected leads to this campaign</button>
-          <a id="crmAssignRoundTripBtn" class="secondary-btn" href="leads.html" style="display:inline-block; text-decoration:none;">Add more from Leads CRM</a>
+          <button id="crmAssignRoundTripBtn" class="secondary-btn" type="button">Add more from Leads CRM</button>
           <span id="assignSelectionCount" class="selection-count">0 leads selected</span>
           <span id="assignmentHint" class="selection-count">Save this campaign before assigning leads.</span>
         </div>
       </div>
-      <p class="muted" style="margin-top:14px;">Need a past campaign? Open it from the <a href="campaigns.html" style="color:var(--accent);">Campaigns</a> library.</p>
+      <div class="hub-actions" style="margin-top:14px;">
+        <button id="openCampaignsLibraryBtn" class="secondary-btn" type="button">Open Campaigns library</button>
+      </div>
     </section>
 
     <section id="prepare-launch" class="card panel" style="margin-bottom:24px;">
@@ -355,7 +357,10 @@
         </div>
         <div>
           <h3 style="margin:0 0 10px; font-size:16px;">Launch queue</h3>
-          <p class="muted" style="margin:0 0 12px;">Recent prepared jobs for this session. See the full queue on <a href="launches.html" style="color:var(--accent);">Launches</a>.</p>
+          <p class="muted" style="margin:0 0 12px;">Recent prepared jobs for this session.</p>
+          <div class="hub-actions" style="margin-bottom:12px;">
+            <button id="openLaunchesLibraryBtn" class="secondary-btn" type="button">Open Launches queue</button>
+          </div>
           <div id="launchList" class="launch-list"><p class="muted">No launch jobs prepared yet.</p></div>
         </div>
       </div>
@@ -440,6 +445,8 @@
     const assignTargetLabel = document.getElementById('assignTargetLabel');
     const crmAssignRoundTripBtn = document.getElementById('crmAssignRoundTripBtn');
     const openCrmForCampaignBtn = document.getElementById('openCrmForCampaignBtn');
+    const openCampaignsLibraryBtn = document.getElementById('openCampaignsLibraryBtn');
+    const openLaunchesLibraryBtn = document.getElementById('openLaunchesLibraryBtn');
     const filterUnassignedBtn = document.getElementById('filterUnassignedBtn');
     const existingLeadsCueMessage = document.getElementById('existingLeadsCueMessage');
     const selectionCount = document.getElementById('selectionCount');
@@ -1433,14 +1440,14 @@
       const name = currentCampaignName();
 
       if (openCrmForCampaignBtn) {
-        openCrmForCampaignBtn.href = href;
+        openCrmForCampaignBtn.dataset.navHref = href;
         openCrmForCampaignBtn.textContent = campaignReady
           ? `Add existing leads in CRM`
           : 'Browse Leads CRM';
       }
 
       if (crmAssignRoundTripBtn) {
-        crmAssignRoundTripBtn.href = href;
+        crmAssignRoundTripBtn.dataset.navHref = href;
         crmAssignRoundTripBtn.classList.toggle('is-disabled', !campaignReady);
         crmAssignRoundTripBtn.setAttribute('aria-disabled', campaignReady ? 'false' : 'true');
         if (!campaignReady) {
@@ -2224,11 +2231,23 @@
       renderRows(currentLeads);
       setStatus('Showing unassigned leads only. Select the ones for this campaign.', 'success');
     });
+    openCrmForCampaignBtn?.addEventListener('click', () => {
+      window.location.href = openCrmForCampaignBtn.dataset.navHref || crmAssignRoundTripHref();
+    });
+    openCampaignsLibraryBtn?.addEventListener('click', () => {
+      window.location.href = 'campaigns.html';
+    });
+    openLaunchesLibraryBtn?.addEventListener('click', () => {
+      window.location.href = 'launches.html';
+    });
     crmAssignRoundTripBtn?.addEventListener('click', (event) => {
-      if (currentCampaignId) return;
-      event.preventDefault();
-      setStatus('Save this campaign in Step 3 first. Then CRM can assign existing leads back to it.', 'error');
-      document.getElementById('campaigns-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (!currentCampaignId) {
+        event.preventDefault();
+        setStatus('Save this campaign in Step 3 first. Then CRM can assign existing leads back to it.', 'error');
+        document.getElementById('campaigns-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      window.location.href = crmAssignRoundTripBtn.dataset.navHref || crmAssignRoundTripHref();
     });
     unassignLeadsBtn?.addEventListener('click', () => withButtonBusy(unassignLeadsBtn, unassignSelectedLeads, 'Removing...'));
     deleteLeadsBtn?.addEventListener('click', () => withButtonBusy(deleteLeadsBtn, deleteSelectedLeads, 'Deleting...'));

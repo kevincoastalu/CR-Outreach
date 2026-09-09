@@ -14,7 +14,7 @@
       <strong id="crmMissionTitle">Adding leads to a campaign</strong>
       <p id="crmMissionMessage">Select leads, assign them to the campaign, then return to the workflow.</p>
       <div class="action-row" style="margin:0;">
-        <a id="crmMissionReturnBtn" class="primary-btn" href="index.html#campaigns-hub" style="display:inline-block; text-decoration:none;">Return to campaign</a>
+        <button id="crmMissionReturnBtn" class="primary-btn" type="button">Return to campaign</button>
         <button id="crmMissionDismissBtn" class="secondary-btn" type="button">Stay in Leads</button>
       </div>
     </div>
@@ -26,8 +26,8 @@
       </div>
       <p class="page-intro">Review and organize every prospect in one place. Assign or remove leads from campaigns in bulk, delete accidental imports, or edit one person at a time.</p>
       <div class="hub-actions">
-        <a class="primary-btn" href="index.html#get-leads" style="display:inline-block; text-decoration:none;">Add leads in workflow</a>
-        <a class="secondary-btn" href="campaigns.html" style="display:inline-block; text-decoration:none;">Open campaigns library</a>
+        <button class="primary-btn" type="button" data-nav-href="index.html#get-leads">Add leads in workflow</button>
+        <button class="secondary-btn" type="button" data-nav-href="campaigns.html">Open Campaigns library</button>
       </div>
       <div id="statusMessage" class="status-message" aria-live="polite"></div>
 
@@ -152,8 +152,9 @@
 
   <script src="shared.js"></script>
   <script>
-    const { escapeHtml, withButtonBusy, setStatus, formatLeadStatus, leadEmailKey, leadCampaignNames, leadFirmKeywords, topbar } = window.CyRiskShared;
+    const { escapeHtml, withButtonBusy, setStatus, formatLeadStatus, leadEmailKey, leadCampaignNames, leadFirmKeywords, topbar, bindNavButtons } = window.CyRiskShared;
     document.getElementById('topbarMount').innerHTML = topbar('leads');
+    bindNavButtons(document);
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
     const SELECTION_KEY = 'cyrisk-selected-lead-emails';
@@ -223,7 +224,7 @@
       crmMissionTitle.textContent = `Adding leads to “${name}”`;
       crmMissionMessage.textContent = extraMessage
         || 'Select leads below (try Unassigned or search firm keywords), click Assign selected, then return to the campaign workflow.';
-      crmMissionReturnBtn.href = safeReturnHref(missionReturnTo);
+      crmMissionReturnBtn.dataset.navHref = safeReturnHref(missionReturnTo);
       crmMissionBanner.classList.add('is-visible');
     }
 
@@ -742,6 +743,9 @@
     crmMissionDismissBtn?.addEventListener('click', () => {
       crmMissionBanner?.classList.remove('is-visible');
     });
+    crmMissionReturnBtn?.addEventListener('click', () => {
+      window.location.href = crmMissionReturnBtn.dataset.navHref || safeReturnHref(missionReturnTo);
+    });
 
     const pageParams = new URLSearchParams(window.location.search);
     const statusParam = pageParams.get('status');
@@ -753,7 +757,7 @@
     missionAssignTo = String(pageParams.get('assignTo') || '').trim();
     missionReturnTo = safeReturnHref(pageParams.get('return') || '');
     if (missionAssignTo) {
-      crmMissionReturnBtn.href = missionReturnTo;
+      crmMissionReturnBtn.dataset.navHref = missionReturnTo;
     }
 
     loadData();

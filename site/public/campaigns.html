@@ -17,8 +17,8 @@
       </div>
       <p class="page-intro">Your campaign library in a compact list. Click a campaign to expand details—only one stays open at a time.</p>
       <div class="hub-actions">
-        <a class="primary-btn" href="index.html#campaigns-hub">Create new campaign</a>
-        <a class="secondary-btn" href="leads.html">Open leads CRM</a>
+        <button class="primary-btn" type="button" data-nav-href="index.html#campaigns-hub">Create new campaign</button>
+        <button class="secondary-btn" type="button" data-nav-href="leads.html">Browse Leads CRM</button>
       </div>
       <div id="statusMessage" class="status-message" aria-live="polite"></div>
       <div id="campaignList" class="stack-list"></div>
@@ -27,8 +27,9 @@
 
   <script src="shared.js"></script>
   <script>
-    const { escapeHtml, withButtonBusy, setStatus, topbar } = window.CyRiskShared;
+    const { escapeHtml, withButtonBusy, setStatus, topbar, bindNavButtons } = window.CyRiskShared;
     document.getElementById('topbarMount').innerHTML = topbar('campaigns');
+    bindNavButtons(document);
 
     const campaignList = document.getElementById('campaignList');
     const statusMessage = document.getElementById('statusMessage');
@@ -71,7 +72,7 @@
               <p><strong>Launch:</strong> ${latestJob ? `${escapeHtml(latestJob.platform)} / ${escapeHtml(latestJob.status)}` : 'Not prepared'}</p>
               ${preview}
               <div class="mini-campaign-actions">
-                <a class="secondary-btn" href="index.html?campaign=${encodeURIComponent(campaign.id || '')}#campaigns-hub">Open in workflow</a>
+                <button class="secondary-btn" type="button" data-nav-href="index.html?campaign=${encodeURIComponent(campaign.id || '')}#campaigns-hub">Open in workflow</button>
                 <button class="secondary-btn danger-btn delete-campaign-btn" type="button" data-campaign-id="${escapeHtml(campaign.id || '')}" data-campaign-name="${escapeHtml(campaign.name || 'Untitled campaign')}">Delete</button>
               </div>
             </div>

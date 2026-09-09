@@ -53,6 +53,21 @@ window.CyRiskShared = {
     return sourceQuery;
   },
 
+  navigateTo(href) {
+    const target = String(href || '').trim();
+    if (!target) return;
+    window.location.href = target;
+  },
+
+  bindNavButtons(root = document) {
+    root.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-nav-href]');
+      if (!button || button.disabled || button.classList.contains('is-disabled')) return;
+      event.preventDefault();
+      this.navigateTo(button.getAttribute('data-nav-href'));
+    });
+  },
+
   topbar(active) {
     const links = [
       { href: 'index.html', id: 'workflow', label: 'Campaign workflow' },

@@ -17,8 +17,8 @@
       </div>
       <p class="page-intro">Every prepared launch job in a compact list. Click a row to expand details—only one stays open at a time.</p>
       <div class="hub-actions">
-        <a class="primary-btn" href="index.html#prepare-launch">Prepare a launch</a>
-        <a class="secondary-btn" href="campaigns.html">Browse campaigns</a>
+        <button class="primary-btn" type="button" data-nav-href="index.html#prepare-launch">Prepare a launch</button>
+        <button class="secondary-btn" type="button" data-nav-href="campaigns.html">Browse Campaigns</button>
       </div>
       <div id="statusMessage" class="status-message" aria-live="polite"></div>
       <div id="launchList" class="stack-list"><p class="muted">Loading launch jobs...</p></div>
@@ -27,8 +27,9 @@
 
   <script src="shared.js"></script>
   <script>
-    const { escapeHtml, setStatus, topbar } = window.CyRiskShared;
+    const { escapeHtml, setStatus, topbar, bindNavButtons } = window.CyRiskShared;
     document.getElementById('topbarMount').innerHTML = topbar('launches');
+    bindNavButtons(document);
 
     const launchList = document.getElementById('launchList');
     const statusMessage = document.getElementById('statusMessage');
@@ -68,8 +69,8 @@
               <p><strong>Status:</strong> ${escapeHtml(job.status || '-')}</p>
               <p><strong>Next step:</strong> Activate this send in ${escapeHtml(job.platform || 'your email provider')}. The sending mailbox is configured there.</p>
               <div class="mini-campaign-actions">
-                ${job.campaignId ? `<a class="secondary-btn" href="index.html?campaign=${encodeURIComponent(job.campaignId)}#prepare-launch">Open campaign</a>` : ''}
-                <a class="secondary-btn" href="campaigns.html">View campaigns</a>
+                ${job.campaignId ? `<button class="secondary-btn" type="button" data-nav-href="index.html?campaign=${encodeURIComponent(job.campaignId)}#prepare-launch">Open campaign</button>` : ''}
+                <button class="secondary-btn" type="button" data-nav-href="campaigns.html">Browse Campaigns</button>
               </div>
             </div>
           </article>

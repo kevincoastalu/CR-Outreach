@@ -399,28 +399,60 @@
       margin-top: 14px;
     }
 
-    button {
-      border: none;
+    button,
+    a.primary-btn,
+    a.secondary-btn,
+    button.primary-btn,
+    button.secondary-btn,
+    .primary-btn,
+    .secondary-btn {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid transparent;
       border-radius: 10px;
       padding: 10px 14px;
+      min-height: 40px;
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
-      transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
       box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+      font-family: inherit;
+      line-height: 1.2;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      vertical-align: middle;
+      color: var(--text);
+      background: var(--panel-soft);
     }
 
-    button:hover:not(:disabled) {
+    button:hover:not(:disabled):not(.is-disabled),
+    a.primary-btn:hover:not(.is-disabled),
+    a.secondary-btn:hover:not(.is-disabled),
+    .primary-btn:hover:not(:disabled):not(.is-disabled),
+    .secondary-btn:hover:not(:disabled):not(.is-disabled) {
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
       transform: translateY(-1px);
     }
 
-    button:active:not(:disabled) {
+    button:active:not(:disabled):not(.is-disabled),
+    a.primary-btn:active:not(.is-disabled),
+    a.secondary-btn:active:not(.is-disabled),
+    .primary-btn:active:not(:disabled):not(.is-disabled),
+    .secondary-btn:active:not(:disabled):not(.is-disabled) {
       box-shadow: 0 0 0 rgba(0, 0, 0, 0.35);
       transform: translateY(2px) scale(0.98);
     }
 
-    button:focus-visible {
+    button:focus-visible,
+    a.primary-btn:focus-visible,
+    a.secondary-btn:focus-visible,
+    .primary-btn:focus-visible,
+    .secondary-btn:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
     }
@@ -428,6 +460,21 @@
     button:disabled {
       cursor: wait;
       opacity: 0.7;
+    }
+
+    button.is-disabled:disabled,
+    button.is-disabled,
+    a.primary-btn.is-disabled,
+    a.secondary-btn.is-disabled,
+    .primary-btn.is-disabled,
+    .secondary-btn.is-disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    a.primary-btn.is-disabled,
+    a.secondary-btn.is-disabled {
+      pointer-events: none;
     }
 
     .button-spinner {
@@ -446,15 +493,33 @@
       to { transform: rotate(360deg); }
     }
 
+    button.primary-btn,
+    a.primary-btn,
     .primary-btn {
       background: var(--accent);
-      color: white;
+      color: #fff;
+      border-color: transparent;
     }
 
+    button.secondary-btn,
+    a.secondary-btn,
     .secondary-btn {
       background: var(--panel-soft);
       color: var(--text);
-      border: 1px solid var(--border);
+      border-color: var(--border);
+    }
+
+    .hub-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 0 0 16px;
+    }
+
+    .hub-actions .primary-btn,
+    .hub-actions .secondary-btn {
+      margin: 0;
     }
 
     .status-message {
@@ -876,13 +941,6 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.45;
-    }
-
-    a.secondary-btn.is-disabled,
-    a.primary-btn.is-disabled {
-      opacity: 0.55;
-      pointer-events: none;
-      cursor: not-allowed;
     }
 
     .info-tip {
@@ -1335,12 +1393,4 @@ a.metric-card:hover {
   font-size: 15px;
   line-height: 1.5;
   max-width: 720px;
-}
-
-.primary-btn,
-a.primary-btn,
-.secondary-btn,
-a.secondary-btn {
-  display: inline-block;
-  text-decoration: none;
 }
