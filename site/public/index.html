@@ -2185,10 +2185,65 @@
       }
     }
 
-    function resetCampaignBuilder({ scrollToTop = false } = {}) {
+    function clearApolloSearchSession() {
+      apolloSearchResults = [];
+      apolloHeldLeads = [];
+      apolloSearchPage = 0;
+      apolloLastSearchKey = '';
+      apolloSearchMeta = {
+        totalEntries: 0,
+        totalPages: 0,
+        page: 0,
+        perPage: 0,
+        returned: 0,
+        shown: 0
+      };
+      localStorage.removeItem('cyrisk-apollo-held-leads');
+      renderApolloResults();
+      renderApolloQueue();
+      updateApolloSearchSummary();
+      updateApolloSelectionCount();
+      apolloNextPanel?.classList.remove('is-visible');
+      setApolloStatus('');
+    }
+
+    function startFreshWorkflow() {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(SELECTION_KEY);
+      localStorage.removeItem(DRAFTS_KEY);
+      localStorage.removeItem('cyrisk-apollo-held-leads');
+
+      currentLeads = [];
+      selectedLeadEmails = new Set();
+      leadHubFilter = '';
+      leadStatusFilter = '';
+      leadAssignmentFilter = '';
+      leadSortBy = 'name-asc';
+      leadPage = 1;
+      editingLeadEmail = '';
+
+      if (leadHubFilterInput) leadHubFilterInput.value = '';
+      if (leadStatusFilterInput) leadStatusFilterInput.value = '';
+      if (leadAssignmentFilterInput) leadAssignmentFilterInput.value = '';
+      if (leadSortByInput) leadSortByInput.value = 'name-asc';
+      if (manualLeadForm) manualLeadForm.reset();
+      if (csvInput) csvInput.value = '';
+      if (addLeadBtn) addLeadBtn.textContent = 'Add lead';
+
+      clearApolloSearchSession();
+      renderRows([]);
+      resetCampaignBuilder({ scrollToTop: false, persistDraft: false });
+      localStorage.removeItem(DRAFTS_KEY);
+      setAssignPanelStatus('');
+      setLaunchPanelStatus('');
+      updateSelectionCount();
+      updateWorkflowProgress();
+    }
+
+    function resetCampaignBuilder({ scrollToTop = false, persistDraft = true } = {}) {
       currentCampaignId = '';
       currentDrafts = {};
-      campaignNameInput.value = 'New campaign';
+      campaignNameInput.value = '';
       campaignSegmentInput.value = '';
       campaignObjectiveInput.value = '';
       campaignCtaInput.value = '';
@@ -2199,10 +2254,11 @@
       campaignDocumentsInput.value = '';
       documentList.textContent = 'No reference documents added.';
       renderDrafts({});
-      saveCampaignDraftsLocally();
+      if (persistDraft) saveCampaignDraftsLocally();
+      else localStorage.removeItem(DRAFTS_KEY);
       updateAssignTargetLabel();
       updateWorkflowProgress();
-      setStatus('New campaign ready. Start at Step 1, then write and save in Step 3.', 'success');
+      setStatus('Blank campaign ready. Find leads in Step 1, then write copy in Step 3.', 'success');
       if (scrollToTop) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -2478,14 +2534,10 @@
       const startNew = params.get('new') === '1';
 
       if (startNew) {
-        resetCampaignBuilder({ scrollToTop: false });
-        loadFromStorage();
-        renderApolloQueue();
+        startFreshWorkflow();
         await loadSavedCampaigns({ autoOpenFromUrl: false });
-        await loadLeadHub();
-        updateWorkflowProgress();
         updateExistingLeadsCtas();
-        setStatus('New campaign ready. Start at Step 1 with leads, then write and save in Step 3.', 'success');
+        setStatus('Fresh workflow ready. No leads or copy loaded—start at Step 1.', 'success');
         window.scrollTo({ top: 0, behavior: 'auto' });
         return;
       }
