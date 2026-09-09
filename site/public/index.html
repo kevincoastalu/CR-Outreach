@@ -210,7 +210,44 @@
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
-      transition: 0.15s ease;
+      transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      box-shadow: 0 2px 0 rgba(15, 23, 42, 0.12);
+    }
+
+    button:hover:not(:disabled) {
+      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.12);
+      transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) {
+      box-shadow: 0 0 0 rgba(15, 23, 42, 0.12);
+      transform: translateY(2px) scale(0.98);
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+
+    .button-spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      margin-right: 7px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      vertical-align: -2px;
+      animation: button-spin 0.7s linear infinite;
+    }
+
+    @keyframes button-spin {
+      to { transform: rotate(360deg); }
     }
 
     .primary-btn {
@@ -980,6 +1017,21 @@
       controlPersonalization.textContent = personalizationModeInput.value || 'Not specified';
     }
 
+    async function withButtonBusy(button, action, busyLabel) {
+      if (button.disabled) return;
+      const originalHtml = button.innerHTML;
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      button.innerHTML = `<span class="button-spinner" aria-hidden="true"></span>${busyLabel}`;
+      try {
+        return await action();
+      } finally {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        button.innerHTML = originalHtml;
+      }
+    }
+
     function escapeHtml(value) {
       return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
     }
@@ -1625,9 +1677,12 @@
       setStatus(`${leads.length} leads loaded and ready to save.`, 'success');
     });
 
-    saveLeadsBtn.addEventListener('click', saveLeadsToSupabase);
-    generateDraftsBtn.addEventListener('click', generateCampaignDrafts);
-    manualLeadForm.addEventListener('submit', addManualLead);
+    saveLeadsBtn.addEventListener('click', () => withButtonBusy(saveLeadsBtn, saveLeadsToSupabase, 'Saving leads...'));
+    generateDraftsBtn.addEventListener('click', () => withButtonBusy(generateDraftsBtn, generateCampaignDrafts, 'Generating drafts...'));
+    manualLeadForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      withButtonBusy(document.getElementById('addLeadBtn'), () => addManualLead(event), 'Adding lead...');
+    });
     leadTableBody.addEventListener('change', (event) => {
       const checkbox = event.target.closest('.lead-select');
       if (!checkbox) return;
@@ -1660,23 +1715,23 @@
       selectedLeadEmails.clear();
       renderRows(currentLeads);
     });
-    assignLeadsBtn.addEventListener('click', assignSelectedLeads);
+    assignLeadsBtn.addEventListener('click', () => withButtonBusy(assignLeadsBtn, assignSelectedLeads, 'Assigning leads...'));
     leadHubFilterInput.addEventListener('input', () => {
       leadHubFilter = leadHubFilterInput.value.trim().toLowerCase();
       renderRows(currentLeads);
     });
-    searchApolloBtn.addEventListener('click', searchApollo);
-    holdApolloBtn.addEventListener('click', holdSelectedApolloLeads);
-    enrichApolloBtn.addEventListener('click', enrichSelectedApolloLeads);
-    importApolloBtn.addEventListener('click', importSelectedApolloLeads);
+    searchApolloBtn.addEventListener('click', () => withButtonBusy(searchApolloBtn, searchApollo, 'Searching Apollo...'));
+    holdApolloBtn.addEventListener('click', () => withButtonBusy(holdApolloBtn, holdSelectedApolloLeads, 'Holding prospects...'));
+    enrichApolloBtn.addEventListener('click', () => withButtonBusy(enrichApolloBtn, enrichSelectedApolloLeads, 'Enriching prospects...'));
+    importApolloBtn.addEventListener('click', () => withButtonBusy(importApolloBtn, importSelectedApolloLeads, 'Importing prospects...'));
     clearApolloQueueBtn.addEventListener('click', () => {
       apolloHeldLeads = [];
       persistApolloQueue();
       setApolloStatus('Held prospect queue cleared.', 'success');
     });
     draftGrid.addEventListener('input', updateDraftValue);
-    saveCampaignBtn.addEventListener('click', saveCampaignToSupabase);
-    prepareLaunchBtn.addEventListener('click', prepareLaunch);
+    saveCampaignBtn.addEventListener('click', () => withButtonBusy(saveCampaignBtn, saveCampaignToSupabase, 'Saving campaign...'));
+    prepareLaunchBtn.addEventListener('click', () => withButtonBusy(prepareLaunchBtn, prepareLaunch, 'Preparing launch...'));
     campaignList.addEventListener('click', (event) => {
       const button = event.target.closest('.review-campaign-btn');
       if (button) reviewCampaign(Number(button.dataset.campaignIndex));
