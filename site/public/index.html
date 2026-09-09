@@ -916,6 +916,7 @@
         </select>
         <button id="assignLeadsBtn" class="primary-btn" type="button">Assign selected</button>
         <span id="selectionCount" class="selection-count">0 leads selected</span>
+        <span id="assignmentHint" class="selection-count">Save leads before assigning them to a campaign.</span>
       </div>
       <div class="table-wrap">
         <table>
@@ -986,6 +987,7 @@
     const assignCampaignSelect = document.getElementById('assignCampaignSelect');
     const assignLeadsBtn = document.getElementById('assignLeadsBtn');
     const selectionCount = document.getElementById('selectionCount');
+    const assignmentHint = document.getElementById('assignmentHint');
     const leadHubFilterInput = document.getElementById('leadHubFilter');
     const launchList = document.getElementById('launchList');
     const controlIcp = document.getElementById('controlIcp');
@@ -1295,6 +1297,15 @@
         return [lead.first_name, lead.last_name, lead.email, lead.firm_name, lead.status].join(' ').toLowerCase().includes(leadHubFilter);
       }).slice(0, 15);
       selectAllLeadsCheckbox.checked = visibleLeads.length > 0 && visibleLeads.every((lead) => selectedLeadEmails.has((lead.email || '').trim().toLowerCase()));
+      if (!currentLeads.length) {
+        assignmentHint.textContent = 'Upload or add leads, then click Save leads before assigning them.';
+      } else if (!selectedLeadEmails.size) {
+        assignmentHint.textContent = 'Select one or more leads to assign.';
+      } else if (!assignCampaignSelect.value) {
+        assignmentHint.textContent = 'Choose a campaign for the selected leads.';
+      } else {
+        assignmentHint.textContent = 'Ready to assign selected leads.';
+      }
     }
 
     function populateCampaignSelect() {
@@ -1716,6 +1727,7 @@
       renderRows(currentLeads);
     });
     assignLeadsBtn.addEventListener('click', () => withButtonBusy(assignLeadsBtn, assignSelectedLeads, 'Assigning leads...'));
+    assignCampaignSelect.addEventListener('change', updateSelectionCount);
     leadHubFilterInput.addEventListener('input', () => {
       leadHubFilter = leadHubFilterInput.value.trim().toLowerCase();
       renderRows(currentLeads);
