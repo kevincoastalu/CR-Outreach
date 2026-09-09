@@ -230,6 +230,45 @@
       box-shadow: var(--shadow);
     }
 
+    .campaign-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .mini-campaign {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel-soft);
+    }
+
+    .mini-campaign h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .mini-campaign p {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .mini-campaign .tag {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 11px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
     .campaign-card h3 {
       margin: 0 0 8px;
       font-size: 16px;
@@ -507,6 +546,11 @@
       </div>
 
       <div id="draftGrid" class="draft-grid"></div>
+
+      <div>
+        <h3 style="margin:16px 0 10px; font-size:16px;">Saved campaigns</h3>
+        <div id="campaignList" class="campaign-list"></div>
+      </div>
     </section>
 
     <section class="card panel" style="margin-bottom:24px;">
@@ -552,6 +596,7 @@
     const campaignObjectiveInput = document.getElementById('campaignObjective');
     const saveCampaignBtn = document.getElementById('saveCampaignBtn');
     const campaignStatusInput = document.getElementById('campaignStatus');
+    const campaignList = document.getElementById('campaignList');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
     const DRAFTS_KEY = 'cyrisk-outreach-drafts';
@@ -708,6 +753,79 @@
       }));
     }
 
+    function renderCampaignList(items) {
+      if (!items || !items.length) {
+        campaignList.innerHTML = '<div class="mini-campaign"><h3>No campaigns yet</h3><p>Save a campaign to create your first draft record.</p></div>';
+        return;
+      }
+
+      campaignList.innerHTML = items.map((campaign) => {
+        const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
+        const preview = drafts.length ? drafts.map((draft) => `<p><strong>${draft.subject_line || 'Draft'}</strong><br>${(draft.body_text || '').slice(0, 90)}${(draft.body_text || '').length > 90 ? '...' : ''}</p>`).join('') : '<p>No drafted copy stored yet.</p>';
+
+        return `
+          <article class="mini-campaign">
+            <h3>${(campaign.name || 'Untitled campaign').replace(/</g, '&lt;')}</h3>
+            <p>${(campaign.objective || 'No objective set.').replace(/</g, '&lt;')}</p>
+            <p><strong>Segment:</strong> ${(campaign.target_segment || 'N/A').replace(/</g, '&lt;')}</p>
+            <div class="tag">${(campaign.status || 'draft')}</div>
+            ${preview}
+          </article>
+        `;
+      }).join('');
+    }
+
+    async function saveCampaignToSupabase() {
+      const payload = {
+        campaignName: campaignNameInput.value,
+        objective: campaignObjectiveInput.value,
+        segment: campaignSegmentInput.value,
+        status: campaignStatusInput.value || 'draft',
+        drafts: currentDrafts
+      };
+
+      if (!payload.campaignName.trim()) {
+        setStatus('Give the campaign a name before saving.', 'error');
+        return;
+      }
+
+      setStatus('Saving campaign to Supabase...', '');
+
+      try {
+        const response = await fetch('/.netlify/functions/save-campaign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Unknown error');
+        }
+
+        campaignStatusInput.value = result.status || 'Saved';
+        saveCampaignDraftsLocally();
+        await loadSavedCampaigns();
+        setStatus(`Campaign saved with ${result.savedDraftCount || 0} draft variants.`, 'success');
+      } catch (error) {
+        setStatus(error.message || 'Could not save campaign.', 'error');
+      }
+    }
+
+    async function loadSavedCampaigns() {
+      try {
+        const response = await fetch('/.netlify/functions/list-campaigns');
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Could not load campaigns');
+        }
+
+        renderCampaignList(Array.isArray(result.campaigns) ? result.campaigns : []);
+      } catch (error) {
+        console.warn('Could not load saved campaigns', error);
+      }
+    }
+
     async function generateCampaignDrafts() {
       if (!currentLeads.length) {
         setStatus('Upload a CSV before generating drafts.', 'error');
@@ -768,11 +886,7 @@
 
     saveLeadsBtn.addEventListener('click', saveLeadsToSupabase);
     generateDraftsBtn.addEventListener('click', generateCampaignDrafts);
-    saveCampaignBtn.addEventListener('click', () => {
-      saveCampaignDraftsLocally();
-      campaignStatusInput.value = 'Saved';
-      setStatus('Campaign draft saved locally.', 'success');
-    });
+    saveCampaignBtn.addEventListener('click', saveCampaignToSupabase);
 
     const savedDrafts = localStorage.getItem(DRAFTS_KEY);
     if (savedDrafts) {
@@ -788,6 +902,7 @@
     }
 
     loadFromStorage();
+    loadSavedCampaigns();
   </script>
 </body>
 </html>
