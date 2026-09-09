@@ -20,7 +20,6 @@ export const handler = async (event) => {
     const segment = String(body.segment || '').trim();
     const status = String(body.status || 'draft').trim();
     const cta = String(body.cta || '').trim();
-    const scanPolicy = String(body.scanPolicy || '').trim();
     const personalizationMode = String(body.personalizationMode || '').trim();
     const drafts = body.drafts && typeof body.drafts === 'object' ? body.drafts : {};
 
@@ -42,7 +41,6 @@ export const handler = async (event) => {
         target_segment: segment,
         status,
         cta,
-        scan_policy: scanPolicy,
         personalization_mode: personalizationMode
       })
       .select()

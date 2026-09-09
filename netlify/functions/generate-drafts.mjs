@@ -18,7 +18,6 @@ export const handler = async (event) => {
     const leads = Array.isArray(body.leads) ? body.leads : [];
     const segment = body.segment || 'privacy litigators and privacy compliance counsel';
     const cta = body.cta || 'Reply with a domain or matter they want checked.';
-    const scanPolicy = body.scanPolicy || 'Do not pre-scan the recipient organization';
     const personalizationMode = body.personalizationMode || 'Email only';
 
     if (!leads.length) {
@@ -34,7 +33,6 @@ export const handler = async (event) => {
       Product: Insight Engine
       Goal: Get a reply from lawyers with interest in privacy litigation, privacy compliance, or data-security risk.
       CTA: ${cta}
-      Scan policy: ${scanPolicy}
       Tone: concise, credible, non-pushy, professional.
       Avoid: spammy language, exaggerated claims, scheduling links.
       Personalization mode: ${personalizationMode}
