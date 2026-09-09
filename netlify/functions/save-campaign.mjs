@@ -33,18 +33,21 @@ export const handler = async (event) => {
       { auth: { persistSession: false } }
     );
 
-    const { data: campaign, error: campaignError } = await supabase
+    const baseCampaign = { name, objective, target_segment: segment, status };
+    const fullCampaign = { ...baseCampaign, cta, personalization_mode: personalizationMode };
+    let { data: campaign, error: campaignError } = await supabase
       .from('campaigns')
-      .insert({
-        name,
-        objective,
-        target_segment: segment,
-        status,
-        cta,
-        personalization_mode: personalizationMode
-      })
+      .insert(fullCampaign)
       .select()
       .single();
+
+    if (campaignError && /column .* does not exist|schema cache/i.test(campaignError.message)) {
+      ({ data: campaign, error: campaignError } = await supabase
+        .from('campaigns')
+        .insert(baseCampaign)
+        .select()
+        .single());
+    }
 
     if (campaignError) {
       return { statusCode: 500, body: JSON.stringify({ error: campaignError.message }) };

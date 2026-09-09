@@ -12,11 +12,19 @@ export const handler = async (event) => {
       { auth: { persistSession: false } }
     );
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('campaigns')
       .select('id, name, objective, target_segment, status, cta, personalization_mode, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)')
       .order('created_at', { ascending: false })
       .limit(12);
+
+    if (error && /column .* does not exist|schema cache/i.test(error.message)) {
+      ({ data, error } = await supabase
+        .from('campaigns')
+        .select('id, name, objective, target_segment, status, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)')
+        .order('created_at', { ascending: false })
+        .limit(12));
+    }
 
     if (error) {
       return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
