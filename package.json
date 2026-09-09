@@ -1,0 +1,12 @@
+{
+  "name": "cyrisk-outreach",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check netlify/functions/save-leads.mjs && node --check netlify/functions/generate-drafts.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.10",
+    "openai": "^4.72.1"
+  }
+}
