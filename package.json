@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check scripts/generate-pages.js && node --check netlify/functions/save-leads.mjs && node --check netlify/functions/generate-drafts.mjs && node --check netlify/functions/save-campaign.mjs && node --check netlify/functions/list-campaigns.mjs"
+    "check": "node --check scripts/generate-pages.js && node --check netlify/functions/save-leads.mjs && node --check netlify/functions/generate-drafts.mjs && node --check netlify/functions/save-campaign.mjs && node --check netlify/functions/list-campaigns.mjs && node --check netlify/functions/prepare-launch.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",

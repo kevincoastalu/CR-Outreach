@@ -613,6 +613,20 @@
             <label for="sequenceSummary">Sequence</label>
             <textarea id="sequenceSummary" readonly>Day 0 / Day 4 / Day 8: capability angle, use-case follow-up, final light nudge.</textarea>
           </div>
+          <div class="field">
+            <label for="launchPlatform">Launch platform</label>
+            <select id="launchPlatform">
+              <option value="apollo">Apollo</option>
+              <option value="instantly">Instantly</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="senderMailbox">Sending mailbox</label>
+            <input id="senderMailbox" type="email" placeholder="sender@company.com" />
+          </div>
+          <div class="action-row">
+            <button id="prepareLaunchBtn" class="secondary-btn" type="button">Approve & prepare launch</button>
+          </div>
         </div>
       </div>
 
@@ -669,11 +683,15 @@
     const saveCampaignBtn = document.getElementById('saveCampaignBtn');
     const campaignStatusInput = document.getElementById('campaignStatus');
     const campaignList = document.getElementById('campaignList');
+    const launchPlatformInput = document.getElementById('launchPlatform');
+    const senderMailboxInput = document.getElementById('senderMailbox');
+    const prepareLaunchBtn = document.getElementById('prepareLaunchBtn');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
     const DRAFTS_KEY = 'cyrisk-outreach-drafts';
     let currentLeads = [];
     let currentDrafts = {};
+    let currentCampaignId = '';
 
     function setStatus(message, type = '') {
       statusMessage.textContent = message || '';
@@ -901,11 +919,53 @@
         }
 
         campaignStatusInput.value = result.status || 'Saved';
+        currentCampaignId = result.id || '';
         saveCampaignDraftsLocally();
         await loadSavedCampaigns();
         setStatus(`Campaign saved with ${result.savedDraftCount || 0} draft variants.`, 'success');
       } catch (error) {
         setStatus(error.message || 'Could not save campaign.', 'error');
+      }
+    }
+
+    async function prepareLaunch() {
+      if (!currentCampaignId) {
+        setStatus('Save the campaign before preparing its launch.', 'error');
+        return;
+      }
+
+      if (!currentLeads.length) {
+        setStatus('Add or upload leads before preparing the launch.', 'error');
+        return;
+      }
+
+      const draftCount = ['subject1', 'subject2', 'subject3'].filter((key) => currentDrafts[key] && currentDrafts[key.replace('subject', 'body')]).length;
+      if (draftCount !== 3) {
+        setStatus('Generate and review all three campaign variants first.', 'error');
+        return;
+      }
+
+      setStatus('Validating campaign and preparing a paused launch job...', '');
+
+      try {
+        const response = await fetch('/.netlify/functions/prepare-launch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaignId: currentCampaignId,
+            platform: launchPlatformInput.value,
+            senderMailbox: senderMailboxInput.value,
+            leads: currentLeads,
+            drafts: currentDrafts
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not prepare launch');
+
+        campaignStatusInput.value = 'Approved - paused';
+        setStatus(`Launch prepared for ${result.platform}. It is paused until final provider activation.`, 'success');
+      } catch (error) {
+        setStatus(error.message || 'Could not prepare launch.', 'error');
       }
     }
 
@@ -986,6 +1046,7 @@
     manualLeadForm.addEventListener('submit', addManualLead);
     draftGrid.addEventListener('input', updateDraftValue);
     saveCampaignBtn.addEventListener('click', saveCampaignToSupabase);
+    prepareLaunchBtn.addEventListener('click', prepareLaunch);
 
     const savedDrafts = localStorage.getItem(DRAFTS_KEY);
     if (savedDrafts) {
