@@ -446,6 +446,27 @@
       white-space: pre-wrap;
     }
 
+    .draft-card textarea {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: white;
+      color: var(--text);
+      font: inherit;
+      line-height: 1.5;
+      resize: vertical;
+    }
+
+    .draft-card .draft-subject {
+      min-height: 64px;
+      margin-bottom: 12px;
+    }
+
+    .draft-card .draft-body {
+      min-height: 150px;
+    }
+
     .footer {
       margin-top: 18px;
       font-size: 12px;
@@ -805,9 +826,9 @@
         <article class="draft-card">
           <span class="draft-tag">${entry.label}</span>
           <h3>Subject</h3>
-          <p class="subject">${(variants && variants[entry.key]) || 'Draft not generated yet.'}</p>
+          <textarea class="draft-subject" data-draft-key="${entry.key}" aria-label="${entry.label} subject">${(variants && variants[entry.key]) || ''}</textarea>
           <h3>Body</h3>
-          <p class="body">${(variants && variants[entry.bodyKey]) || 'No copy available yet.'}</p>
+          <textarea class="draft-body" data-draft-key="${entry.bodyKey}" aria-label="${entry.label} body">${(variants && variants[entry.bodyKey]) || ''}</textarea>
         </article>
       `).join('');
     }
@@ -820,6 +841,13 @@
         drafts: currentDrafts,
         updatedAt: new Date().toISOString()
       }));
+    }
+
+    function updateDraftValue(event) {
+      const field = event.target.closest('[data-draft-key]');
+      if (!field) return;
+      currentDrafts[field.dataset.draftKey] = field.value;
+      saveCampaignDraftsLocally();
     }
 
     function renderCampaignList(items) {
@@ -956,6 +984,7 @@
     saveLeadsBtn.addEventListener('click', saveLeadsToSupabase);
     generateDraftsBtn.addEventListener('click', generateCampaignDrafts);
     manualLeadForm.addEventListener('submit', addManualLead);
+    draftGrid.addEventListener('input', updateDraftValue);
     saveCampaignBtn.addEventListener('click', saveCampaignToSupabase);
 
     const savedDrafts = localStorage.getItem(DRAFTS_KEY);
