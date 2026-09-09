@@ -271,6 +271,27 @@
       margin-top: 18px;
     }
 
+    .apollo-results {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .apollo-result {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel-soft);
+    }
+
+    .apollo-result input { margin-top: 4px; }
+    .apollo-result strong { display: block; margin-bottom: 4px; }
+    .apollo-result p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+
     .mini-campaign {
       padding: 16px;
       border: 1px solid var(--border);
@@ -556,6 +577,38 @@
       </div>
     </section>
 
+    <section class="card panel" style="margin-bottom:24px;">
+      <h2>Find leads in Apollo</h2>
+      <p class="muted">Search Apollo for relevant prospects, review the results, then import selected contacts as leads needing review. Nothing is enrolled or sent from this search.</p>
+      <div class="campaign-builder">
+        <div>
+          <div class="field">
+            <label for="apolloTitles">Job titles</label>
+            <input id="apolloTitles" type="text" value="Partner, Attorney, Counsel" placeholder="Partner, Attorney, Counsel" />
+          </div>
+          <div class="field">
+            <label for="apolloKeywords">Firm keywords</label>
+            <input id="apolloKeywords" type="text" value="privacy law, data security, CIPA, VPPA" placeholder="privacy law, data security, CIPA" />
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label for="apolloResultCount">Results to review</label>
+            <select id="apolloResultCount">
+              <option value="10">10</option>
+              <option value="25">25</option>
+            </select>
+          </div>
+          <div class="action-row">
+            <button id="searchApolloBtn" class="primary-btn" type="button">Search Apollo</button>
+            <button id="importApolloBtn" class="secondary-btn" type="button">Import selected</button>
+          </div>
+        </div>
+      </div>
+      <div id="apolloStatus" class="status-message" aria-live="polite"></div>
+      <div id="apolloResults" class="apollo-results"></div>
+    </section>
+
     <section class="campaign-grid">
       <article class="campaign-card">
         <span class="label">Step 1</span>
@@ -686,6 +739,13 @@
     const launchPlatformInput = document.getElementById('launchPlatform');
     const senderMailboxInput = document.getElementById('senderMailbox');
     const prepareLaunchBtn = document.getElementById('prepareLaunchBtn');
+    const apolloTitlesInput = document.getElementById('apolloTitles');
+    const apolloKeywordsInput = document.getElementById('apolloKeywords');
+    const apolloResultCountInput = document.getElementById('apolloResultCount');
+    const searchApolloBtn = document.getElementById('searchApolloBtn');
+    const importApolloBtn = document.getElementById('importApolloBtn');
+    const apolloStatus = document.getElementById('apolloStatus');
+    const apolloResults = document.getElementById('apolloResults');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
     const DRAFTS_KEY = 'cyrisk-outreach-drafts';
@@ -693,6 +753,77 @@
     let currentDrafts = {};
     let currentCampaignId = '';
     let savedCampaigns = [];
+    let apolloSearchResults = [];
+
+    function setApolloStatus(message, type = '') {
+      apolloStatus.textContent = message || '';
+      apolloStatus.className = 'status-message';
+      if (type) apolloStatus.classList.add(type);
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    function renderApolloResults() {
+      if (!apolloSearchResults.length) {
+        apolloResults.innerHTML = '<p class="muted">No Apollo prospects loaded yet.</p>';
+        return;
+      }
+
+      apolloResults.innerHTML = apolloSearchResults.map((lead, index) => `
+        <label class="apollo-result">
+          <input type="checkbox" data-apollo-index="${index}" ${lead.email ? '' : 'disabled'}>
+          <span><strong>${escapeHtml(`${lead.first_name} ${lead.last_name}`.trim() || 'Unnamed prospect')}</strong><p>${escapeHtml(lead.title || 'Title unavailable')} at ${escapeHtml(lead.firm_name || 'Firm unavailable')}</p><p>${escapeHtml(lead.email || 'No verified email')} ${lead.city || lead.state ? ` · ${escapeHtml([lead.city, lead.state].filter(Boolean).join(', '))}` : ''}</p></span>
+        </label>
+      `).join('');
+    }
+
+    async function searchApollo() {
+      setApolloStatus('Searching Apollo...', '');
+      try {
+        const response = await fetch('/.netlify/functions/search-apollo', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            titles: apolloTitlesInput.value.split(',').map((value) => value.trim()).filter(Boolean),
+            keywords: apolloKeywordsInput.value,
+            perPage: Number(apolloResultCountInput.value)
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Apollo search failed');
+        apolloSearchResults = Array.isArray(result.people) ? result.people : [];
+        renderApolloResults();
+        setApolloStatus(`${apolloSearchResults.length} Apollo prospects ready for review.`, 'success');
+      } catch (error) {
+        setApolloStatus(error.message || 'Apollo search failed.', 'error');
+      }
+    }
+
+    async function importSelectedApolloLeads() {
+      const selected = Array.from(apolloResults.querySelectorAll('input[data-apollo-index]:checked'))
+        .map((input) => apolloSearchResults[Number(input.dataset.apolloIndex)])
+        .filter(Boolean);
+      if (!selected.length) {
+        setApolloStatus('Select at least one Apollo prospect first.', 'error');
+        return;
+      }
+
+      setApolloStatus('Importing selected prospects for review...', '');
+      try {
+        const response = await fetch('/.netlify/functions/import-apollo-leads', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: selected, sourceQuery: `${apolloTitlesInput.value} | ${apolloKeywordsInput.value}` })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Apollo import failed');
+        renderRows([...currentLeads, ...(result.leads || [])]);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLeads));
+        setApolloStatus(`Imported ${result.imported} prospects for review${result.skipped ? `; skipped ${result.skipped}` : ''}.`, 'success');
+      } catch (error) {
+        setApolloStatus(error.message || 'Apollo import failed.', 'error');
+      }
+    }
 
     function setStatus(message, type = '') {
       statusMessage.textContent = message || '';
@@ -1087,6 +1218,8 @@
     saveLeadsBtn.addEventListener('click', saveLeadsToSupabase);
     generateDraftsBtn.addEventListener('click', generateCampaignDrafts);
     manualLeadForm.addEventListener('submit', addManualLead);
+    searchApolloBtn.addEventListener('click', searchApollo);
+    importApolloBtn.addEventListener('click', importSelectedApolloLeads);
     draftGrid.addEventListener('input', updateDraftValue);
     saveCampaignBtn.addEventListener('click', saveCampaignToSupabase);
     prepareLaunchBtn.addEventListener('click', prepareLaunch);
