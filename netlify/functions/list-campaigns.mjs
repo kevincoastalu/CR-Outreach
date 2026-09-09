@@ -12,16 +12,48 @@ export const handler = async (event) => {
       { auth: { persistSession: false } }
     );
 
+    const campaignId = String(event.queryStringParameters?.id || '').trim();
+    const fullSelect = 'id, name, objective, target_segment, status, cta, personalization_mode, solution_context, source_documents, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)';
+    const basicSelect = 'id, name, objective, target_segment, status, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)';
+
+    if (campaignId) {
+      let { data, error } = await supabase
+        .from('campaigns')
+        .select(fullSelect)
+        .eq('id', campaignId)
+        .maybeSingle();
+
+      if (error && /column .* does not exist|schema cache/i.test(error.message)) {
+        ({ data, error } = await supabase
+          .from('campaigns')
+          .select(basicSelect)
+          .eq('id', campaignId)
+          .maybeSingle());
+      }
+
+      if (error) {
+        return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+      }
+      if (!data) {
+        return { statusCode: 404, body: JSON.stringify({ error: 'Campaign not found' }) };
+      }
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ campaigns: [data], campaign: data })
+      };
+    }
+
     let { data, error } = await supabase
       .from('campaigns')
-      .select('id, name, objective, target_segment, status, cta, personalization_mode, solution_context, source_documents, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)')
+      .select(fullSelect)
       .order('created_at', { ascending: false })
       .limit(50);
 
     if (error && /column .* does not exist|schema cache/i.test(error.message)) {
       ({ data, error } = await supabase
         .from('campaigns')
-        .select('id, name, objective, target_segment, status, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)')
+        .select(basicSelect)
         .order('created_at', { ascending: false })
         .limit(50));
     }

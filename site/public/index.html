@@ -1101,6 +1101,8 @@
       }).join('');
       updateWorkflowProgress();
     }
+
+    async function deleteCampaign(campaignId, campaignName) {
       if (!campaignId) {
         setStatus('That campaign cannot be deleted yet because it has no saved ID.', 'error');
         return;
@@ -1129,26 +1131,51 @@
     }
 
     function reviewCampaign(indexOrId) {
-      const campaign = typeof indexOrId === 'number'
+      return hydrateCampaign(indexOrId);
+    }
+
+    async function hydrateCampaign(indexOrId) {
+      let campaign = typeof indexOrId === 'number'
         ? savedCampaigns[indexOrId]
         : savedCampaigns.find((item) => item.id === indexOrId);
-      if (!campaign) return;
+
+      if (!campaign && typeof indexOrId === 'string' && indexOrId) {
+        try {
+          const response = await fetch(`/.netlify/functions/list-campaigns?id=${encodeURIComponent(indexOrId)}`);
+          const result = await response.json();
+          if (response.ok && result.campaign) {
+            campaign = result.campaign;
+            if (!savedCampaigns.some((item) => item.id === campaign.id)) {
+              savedCampaigns = [campaign, ...savedCampaigns];
+              renderCampaignList(savedCampaigns);
+            }
+          }
+        } catch (error) {
+          console.warn('Could not fetch campaign by id', error);
+        }
+      }
+
+      if (!campaign) {
+        setStatus('Could not load that campaign. It may have been deleted.', 'error');
+        return;
+      }
 
       currentCampaignId = campaign.id || '';
       campaignNameInput.value = campaign.name || '';
       campaignObjectiveInput.value = campaign.objective || '';
-      campaignSegmentInput.value = campaign.target_segment || campaignSegmentInput.value;
-      campaignCtaInput.value = campaign.cta || campaignCtaInput.value;
-      personalizationModeInput.value = campaign.personalization_mode || personalizationModeInput.value;
-      solutionContextInput.value = campaign.solution_context || solutionContextInput.value;
+      campaignSegmentInput.value = campaign.target_segment || '';
+      campaignCtaInput.value = campaign.cta || '';
+      personalizationModeInput.value = campaign.personalization_mode || 'Email only';
+      solutionContextInput.value = campaign.solution_context || '';
       referenceDocuments = Array.isArray(campaign.source_documents) ? campaign.source_documents : [];
-      documentList.textContent = Array.isArray(campaign.source_documents) && campaign.source_documents.length
-        ? `${campaign.source_documents.length} reference document${campaign.source_documents.length === 1 ? '' : 's'} stored.`
+      documentList.textContent = referenceDocuments.length
+        ? `${referenceDocuments.length} reference document${referenceDocuments.length === 1 ? '' : 's'} stored.`
         : 'No reference documents added.';
       campaignStatusInput.value = campaign.status || 'draft';
-      updateWorkflowProgress();
 
-      const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
+      const drafts = Array.isArray(campaign.email_drafts)
+        ? [...campaign.email_drafts].sort((a, b) => Date.parse(a.created_at || 0) - Date.parse(b.created_at || 0)).slice(0, 3)
+        : [];
       const restoredDrafts = {};
       drafts.forEach((draft, draftIndex) => {
         const number = draftIndex + 1;
@@ -1156,23 +1183,63 @@
         restoredDrafts[`body${number}`] = draft.body_text || '';
       });
       renderDrafts(restoredDrafts);
+      saveCampaignDraftsLocally();
 
-      const latestJob = Array.isArray(campaign.send_jobs) && campaign.send_jobs.length ? campaign.send_jobs[0] : null;
-      if (latestJob) {
-        launchPlatformInput.value = latestJob.platform || 'apollo';
-        const payload = latestJob.payload || {};
-        const contacts = Array.isArray(payload.contacts) ? payload.contacts.map((contact) => ({
-          ...contact,
-          page_url: contact.page_link || ''
-        })) : [];
-        if (contacts.length) {
-          renderRows(contacts);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
-        }
+      if (assignCampaignSelect) {
+        populateCampaignSelect();
+        assignCampaignSelect.value = currentCampaignId;
       }
 
-      window.scrollTo({ top: document.querySelector('.campaign-builder').offsetTop - 24, behavior: 'smooth' });
-      setStatus(`Loaded ${campaign.name || 'campaign'} for review.`, 'success');
+      const latestJob = Array.isArray(campaign.send_jobs) && campaign.send_jobs.length
+        ? [...campaign.send_jobs].sort((a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0))[0]
+        : null;
+      if (latestJob) {
+        launchPlatformInput.value = latestJob.platform || 'apollo';
+      }
+
+      await loadAssignedLeadsForCampaign(currentCampaignId);
+
+      updateWorkflowProgress();
+      const builder = document.querySelector('#campaigns-hub .campaign-builder') || document.querySelector('.campaign-builder');
+      if (builder) {
+        window.scrollTo({ top: builder.offsetTop - 24, behavior: 'smooth' });
+      }
+      setStatus(`Loaded ${campaign.name || 'campaign'} with its copy and assigned leads.`, 'success');
+    }
+
+    async function loadAssignedLeadsForCampaign(campaignId) {
+      if (!campaignId) return;
+      try {
+        const response = await fetch('/.netlify/functions/list-leads');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not load leads');
+        const leads = Array.isArray(result.leads) ? result.leads : [];
+        if (!leads.length) return;
+
+        renderRows(leads);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+
+        const assignedEmails = leads
+          .filter((lead) => (lead.campaign_leads || []).some((membership) => membership.campaign_id === campaignId))
+          .map(leadEmailKey)
+          .filter(Boolean);
+
+        selectedLeadEmails = new Set(assignedEmails);
+        localStorage.setItem(SELECTION_KEY, JSON.stringify([...selectedLeadEmails]));
+
+        if (leadAssignmentFilterInput) {
+          leadAssignmentFilter = `campaign:${campaignId}`;
+          if (![...leadAssignmentFilterInput.options].some((option) => option.value === leadAssignmentFilter)) {
+            populateCampaignSelect();
+          }
+          leadAssignmentFilterInput.value = leadAssignmentFilter;
+          leadAssignmentFilter = leadAssignmentFilterInput.value;
+        }
+        leadPage = 1;
+        renderRows(currentLeads);
+      } catch (error) {
+        console.warn('Could not load assigned leads for campaign', error);
+      }
     }
 
     async function saveCampaignToSupabase() {
@@ -1261,7 +1328,7 @@
       }
     }
 
-    async function loadSavedCampaigns() {
+    async function loadSavedCampaigns({ autoOpenFromUrl = false } = {}) {
       try {
         const response = await fetch('/.netlify/functions/list-campaigns');
         const result = await response.json();
@@ -1271,10 +1338,11 @@
 
         renderCampaignList(Array.isArray(result.campaigns) ? result.campaigns : []);
 
-        const params = new URLSearchParams(window.location.search);
-        const campaignId = params.get('campaign');
-        if (campaignId && savedCampaigns.some((campaign) => campaign.id === campaignId)) {
-          reviewCampaign(campaignId);
+        if (autoOpenFromUrl) {
+          const campaignId = new URLSearchParams(window.location.search).get('campaign');
+          if (campaignId) {
+            await hydrateCampaign(campaignId);
+          }
         }
       } catch (error) {
         console.warn('Could not load saved campaigns', error);
@@ -1486,7 +1554,7 @@
     campaignList.addEventListener('click', (event) => {
       const reviewButton = event.target.closest('.review-campaign-btn');
       if (reviewButton) {
-        reviewCampaign(reviewButton.dataset.campaignId || Number(reviewButton.dataset.campaignIndex));
+        withButtonBusy(reviewButton, () => reviewCampaign(reviewButton.dataset.campaignId || Number(reviewButton.dataset.campaignIndex)), 'Loading...');
         return;
       }
 
@@ -1496,27 +1564,42 @@
       }
     });
 
-    const savedDrafts = localStorage.getItem(DRAFTS_KEY);
-    if (savedDrafts) {
-      try {
-        const parsedDrafts = JSON.parse(savedDrafts);
-        if (parsedDrafts.campaignName) campaignNameInput.value = parsedDrafts.campaignName;
-        if (parsedDrafts.campaignSegment) campaignSegmentInput.value = parsedDrafts.campaignSegment;
-        if (parsedDrafts.objective) campaignObjectiveInput.value = parsedDrafts.objective;
-        if (parsedDrafts.cta) campaignCtaInput.value = parsedDrafts.cta;
-        if (parsedDrafts.personalizationMode) personalizationModeInput.value = parsedDrafts.personalizationMode;
-        if (parsedDrafts.solutionContext) solutionContextInput.value = parsedDrafts.solutionContext;
-        if (parsedDrafts.drafts) renderDrafts(parsedDrafts.drafts);
-      } catch (error) {
-        console.warn('Could not restore saved drafts', error);
+    async function bootstrapWorkflow() {
+      const campaignId = new URLSearchParams(window.location.search).get('campaign');
+
+      if (!campaignId) {
+        const savedDrafts = localStorage.getItem(DRAFTS_KEY);
+        if (savedDrafts) {
+          try {
+            const parsedDrafts = JSON.parse(savedDrafts);
+            if (parsedDrafts.campaignName) campaignNameInput.value = parsedDrafts.campaignName;
+            if (parsedDrafts.campaignSegment) campaignSegmentInput.value = parsedDrafts.campaignSegment;
+            if (parsedDrafts.objective) campaignObjectiveInput.value = parsedDrafts.objective;
+            if (parsedDrafts.cta) campaignCtaInput.value = parsedDrafts.cta;
+            if (parsedDrafts.personalizationMode) personalizationModeInput.value = parsedDrafts.personalizationMode;
+            if (parsedDrafts.solutionContext) solutionContextInput.value = parsedDrafts.solutionContext;
+            if (parsedDrafts.drafts) renderDrafts(parsedDrafts.drafts);
+          } catch (error) {
+            console.warn('Could not restore saved drafts', error);
+          }
+        }
+        loadFromStorage();
       }
+
+      renderApolloQueue();
+      await loadSavedCampaigns({ autoOpenFromUrl: false });
+
+      if (campaignId) {
+        setStatus('Loading selected campaign...', '');
+        await hydrateCampaign(campaignId);
+      } else {
+        await loadLeadHub();
+      }
+
+      updateWorkflowProgress();
     }
 
-    loadFromStorage();
-    renderApolloQueue();
-    loadSavedCampaigns();
-    loadLeadHub();
-    updateWorkflowProgress();
+    bootstrapWorkflow();
   </script>
 </body>
 </html>
