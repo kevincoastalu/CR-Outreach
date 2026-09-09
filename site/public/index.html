@@ -843,8 +843,8 @@
             </select>
           </div>
           <div class="field">
-            <label for="campaignObjective">Objective</label>
-            <textarea id="campaignObjective">Generate qualified replies from privacy-focused law firms interested in technical evidence behind CIPA, VPPA, and CCPA/CPRA claims.</textarea>
+            <label for="campaignObjective">Objective <span class="info-tip" tabindex="0" role="img" aria-label="About campaign objective" data-tip="Tell the AI what this outreach should achieve. This is the primary prompt for subject lines and email bodies.">i</span></label>
+            <textarea id="campaignObjective" placeholder="What should this outreach accomplish? e.g. get replies from firms evaluating CIPA/VPPA technical evidence.">Generate qualified replies from privacy-focused law firms interested in technical evidence behind CIPA, VPPA, and CCPA/CPRA claims.</textarea>
           </div>
           <div class="field">
             <label for="campaignCta">Call to action</label>
@@ -1738,8 +1738,8 @@
     }
 
     async function generateCampaignDrafts() {
-      if (!campaignSegmentInput.value.trim() || !solutionContextInput.value.trim()) {
-        setStatus('Add an audience and solution context before generating drafts.', 'error');
+      if (!campaignSegmentInput.value.trim() || !campaignObjectiveInput.value.trim() || !solutionContextInput.value.trim()) {
+        setStatus('Add an audience, objective, and solution context before generating drafts.', 'error');
         return;
       }
 
@@ -1752,6 +1752,7 @@
           body: JSON.stringify({
             leads: currentLeads,
             segment: campaignSegmentInput.value || 'privacy litigators and privacy compliance counsel',
+            objective: campaignObjectiveInput.value,
             cta: campaignCtaInput.value,
             personalizationMode: personalizationModeInput.value,
             solutionContext: solutionContextInput.value,
