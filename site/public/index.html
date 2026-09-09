@@ -292,6 +292,56 @@
     .apollo-result strong { display: block; margin-bottom: 4px; }
     .apollo-result p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
 
+    .info-tip {
+      position: relative;
+      display: inline-grid;
+      place-items: center;
+      width: 17px;
+      height: 17px;
+      margin-left: 5px;
+      border: 1px solid #9aaabd;
+      border-radius: 50%;
+      background: white;
+      color: #536273;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: help;
+      vertical-align: text-bottom;
+    }
+
+    .info-tip::after {
+      content: attr(data-tip);
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      bottom: calc(100% + 8px);
+      width: 230px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: #17212f;
+      color: white;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.45;
+      text-align: left;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, 4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .info-tip:hover::after,
+    .info-tip:focus-visible::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .info-tip:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
     .mini-campaign {
       padding: 16px;
       border: 1px solid var(--border);
@@ -572,22 +622,22 @@
           <li><span class="dot"></span> CTA: reply with a domain or matter of interest</li>
           <li><span class="dot"></span> No pre-scan of recipient’s own firm</li>
           <li><span class="dot"></span> Personalized landing pages per lead</li>
-          <li><span class="dot"></span> Apollo merge fields: first_name, firm_name, page_url</li>
+          <li><span class="dot"></span> Apollo merge fields: first_name, firm_name, page_url <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo merge fields" data-tip="These placeholders are filled by Apollo at send time from each contact's mapped fields.">i</span></li>
         </ul>
       </div>
     </section>
 
     <section class="card panel" style="margin-bottom:24px;">
-      <h2>Find leads in Apollo</h2>
+      <h2>Find leads in Apollo <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo lead discovery" data-tip="Search Apollo for prospects first. Results stay here until you select and import them.">i</span></h2>
       <p class="muted">Search Apollo for relevant prospects, review the results, then import selected contacts as leads needing review. Nothing is enrolled or sent from this search.</p>
       <div class="campaign-builder">
         <div>
           <div class="field">
-            <label for="apolloTitles">Job titles</label>
+            <label for="apolloTitles">Job titles <span class="info-tip" tabindex="0" role="img" aria-label="About job title filters" data-tip="Use titles such as Partner, Attorney, or Counsel. Separate multiple titles with commas.">i</span></label>
             <input id="apolloTitles" type="text" value="Partner, Attorney, Counsel" placeholder="Partner, Attorney, Counsel" />
           </div>
           <div class="field">
-            <label for="apolloKeywords">Firm keywords</label>
+            <label for="apolloKeywords">Firm keywords <span class="info-tip" tabindex="0" role="img" aria-label="About firm keyword filters" data-tip="Use terms that describe the practice area, such as privacy law, CIPA, VPPA, or data security.">i</span></label>
             <input id="apolloKeywords" type="text" value="privacy law, data security, CIPA, VPPA" placeholder="privacy law, data security, CIPA" />
           </div>
         </div>
@@ -601,8 +651,8 @@
           </div>
           <div class="action-row">
             <button id="searchApolloBtn" class="primary-btn" type="button">Search Apollo</button>
-            <button id="enrichApolloBtn" class="secondary-btn" type="button">Enrich selected</button>
-            <button id="importApolloBtn" class="secondary-btn" type="button">Import selected</button>
+            <button id="enrichApolloBtn" class="secondary-btn" type="button">Enrich selected <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo enrichment" data-tip="Search results do not include email addresses. Enrichment requests email data for only the prospects you select and may use Apollo credits.">i</span></button>
+            <button id="importApolloBtn" class="secondary-btn" type="button">Import selected <span class="info-tip" tabindex="0" role="img" aria-label="About staged import" data-tip="Import adds selected prospects to this workspace as needs-review leads. It does not enroll or send email.">i</span></button>
           </div>
         </div>
       </div>
@@ -660,7 +710,7 @@
         </div>
         <div>
           <div class="field">
-            <label for="campaignStatus">Current status</label>
+            <label for="campaignStatus">Current status <span class="info-tip" tabindex="0" role="img" aria-label="About campaign status" data-tip="Drafts can be edited. Approved campaigns create a paused launch job and still require final provider activation.">i</span></label>
             <input id="campaignStatus" type="text" value="Draft" readonly />
           </div>
           <div class="field">
@@ -679,7 +729,7 @@
             <input id="senderMailbox" type="email" placeholder="sender@company.com" />
           </div>
           <div class="action-row">
-            <button id="prepareLaunchBtn" class="secondary-btn" type="button">Approve & prepare launch</button>
+            <button id="prepareLaunchBtn" class="secondary-btn" type="button">Approve & prepare launch <span class="info-tip" tabindex="0" role="img" aria-label="About preparing a launch" data-tip="This validates the campaign and creates a paused Apollo or Instantly job. It does not send email yet.">i</span></button>
           </div>
         </div>
       </div>
