@@ -139,6 +139,49 @@
       font-size: 14px;
     }
 
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .primary-btn {
+      background: var(--accent);
+      color: white;
+    }
+
+    .secondary-btn {
+      background: var(--panel-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .status-message {
+      margin-top: 12px;
+      min-height: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status-message.success {
+      color: var(--green);
+    }
+
+    .status-message.error {
+      color: var(--accent);
+    }
+
     .checklist {
       list-style: none;
       padding: 0;
@@ -296,6 +339,11 @@
         <h2>Lead import</h2>
         <div class="upload-box">
           <input id="csvInput" type="file" accept=".csv,text/csv" />
+          <div class="action-row">
+            <button id="saveLeadsBtn" class="primary-btn" type="button">Save leads</button>
+            <button id="generateDraftsBtn" class="secondary-btn" type="button">Generate drafts</button>
+          </div>
+          <div id="statusMessage" class="status-message" aria-live="polite"></div>
         </div>
         <ul class="checklist">
           <li><span class="dot"></span> Check sender mailbox before launch</li>
@@ -374,8 +422,18 @@
     const readyCountEl = document.getElementById('readyCount');
     const leadTableBody = document.getElementById('leadTableBody');
     const csvInput = document.getElementById('csvInput');
+    const saveLeadsBtn = document.getElementById('saveLeadsBtn');
+    const generateDraftsBtn = document.getElementById('generateDraftsBtn');
+    const statusMessage = document.getElementById('statusMessage');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
+    let currentLeads = [];
+
+    function setStatus(message, type = '') {
+      statusMessage.textContent = message || '';
+      statusMessage.className = 'status-message';
+      if (type) statusMessage.classList.add(type);
+    }
 
     function parseCsv(text) {
       const rows = [];
@@ -434,6 +492,8 @@
     }
 
     function renderRows(leads) {
+      currentLeads = leads;
+
       if (!leads.length) {
         leadTableBody.innerHTML = '<tr><td colspan="7" class="muted">No lead CSV uploaded yet.</td></tr>';
         leadCountEl.textContent = '0';
@@ -464,6 +524,65 @@
       }
     }
 
+    async function saveLeadsToSupabase() {
+      if (!currentLeads.length) {
+        setStatus('Upload a CSV before saving leads.', 'error');
+        return;
+      }
+
+      setStatus('Saving leads to Supabase...', '');
+
+      try {
+        const response = await fetch('/.netlify/functions/save-leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: currentLeads })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Unknown error');
+        }
+
+        setStatus(`Saved ${result.count} leads successfully.`, 'success');
+      } catch (error) {
+        setStatus(error.message || 'Could not save leads.', 'error');
+      }
+    }
+
+    async function generateCampaignDrafts() {
+      if (!currentLeads.length) {
+        setStatus('Upload a CSV before generating drafts.', 'error');
+        return;
+      }
+
+      setStatus('Generating draft copy...', '');
+
+      try {
+        const response = await fetch('/.netlify/functions/generate-drafts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: currentLeads, segment: 'privacy litigators and privacy compliance counsel' })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Unknown error');
+        }
+
+        const variants = result.variants || {};
+        const example = [
+          variants.subject1,
+          variants.subject2,
+          variants.subject3
+        ].filter(Boolean).join(' | ');
+
+        setStatus(`Drafts generated: ${example || 'ready'}`, 'success');
+      } catch (error) {
+        setStatus(error.message || 'Could not generate drafts.', 'error');
+      }
+    }
+
     function loadFromStorage() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return;
@@ -483,7 +602,11 @@
       const leads = parseCsv(text);
       renderRows(leads);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+      setStatus(`${leads.length} leads loaded and ready to save.`, 'success');
     });
+
+    saveLeadsBtn.addEventListener('click', saveLeadsToSupabase);
+    generateDraftsBtn.addEventListener('click', generateCampaignDrafts);
 
     loadFromStorage();
   </script>
