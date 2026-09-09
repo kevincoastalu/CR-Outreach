@@ -10,12 +10,21 @@
   <div class="shell">
     <div id="topbarMount"></div>
 
+    <div id="crmMissionBanner" class="crm-mission-banner" role="status">
+      <strong id="crmMissionTitle">Adding leads to a campaign</strong>
+      <p id="crmMissionMessage">Select leads, assign them to the campaign, then return to the workflow.</p>
+      <div class="action-row" style="margin:0;">
+        <a id="crmMissionReturnBtn" class="primary-btn" href="index.html#campaigns-hub" style="display:inline-block; text-decoration:none;">Return to campaign</a>
+        <button id="crmMissionDismissBtn" class="secondary-btn" type="button">Stay in Leads</button>
+      </div>
+    </div>
+
     <section class="card panel" style="margin-bottom:24px;">
       <div class="hub-heading">
         <h2>Leads</h2>
         <span class="info-tip" tabindex="0" role="img" aria-label="About leads" data-tip="This is your lead CRM. Search, filter, edit, and assign prospects to campaigns here. Use Campaign workflow to create new outreach.">i</span>
       </div>
-      <p class="page-intro">Review and organize every prospect in one place. Select leads and assign them to a campaign in bulk, or open Edit lead to add one person to a campaign.</p>
+      <p class="page-intro">Review and organize every prospect in one place. Assign or remove leads from campaigns in bulk, delete accidental imports, or edit one person at a time.</p>
       <div class="hub-actions">
         <a class="primary-btn" href="index.html#get-leads" style="display:inline-block; text-decoration:none;">Add leads in workflow</a>
         <a class="secondary-btn" href="campaigns.html" style="display:inline-block; text-decoration:none;">Open campaigns library</a>
@@ -65,6 +74,11 @@
           <option value="">Assign selected to campaign...</option>
         </select>
         <button id="bulkAssignBtn" class="primary-btn" type="button">Assign selected</button>
+        <select id="unassignCampaignSelect" aria-label="Campaign to remove selected leads from">
+          <option value="">Remove from campaign...</option>
+        </select>
+        <button id="unassignLeadsBtn" class="secondary-btn" type="button">Remove from campaign</button>
+        <button id="deleteLeadsBtn" class="secondary-btn danger-btn" type="button">Delete selected</button>
         <span id="selectionCount" class="selection-count">0 leads selected</span>
         <span id="reviewHint" class="selection-count">Select leads, then assign them to a campaign.</span>
       </div>
@@ -91,12 +105,13 @@
               <th>State</th>
               <th>Status</th>
               <th>Source</th>
+              <th>Firm keywords</th>
               <th>Campaigns</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody id="leadTableBody">
-            <tr><td colspan="12" class="muted">Loading leads...</td></tr>
+            <tr><td colspan="13" class="muted">Loading leads...</td></tr>
           </tbody>
         </table>
       </div>
@@ -115,6 +130,7 @@
           <input id="manualWebsite" name="website" type="url" placeholder="Website">
           <input id="manualCity" name="city" type="text" placeholder="City">
           <input id="manualState" name="state" type="text" placeholder="State">
+          <input id="manualFirmKeywords" name="firm_keywords" type="text" placeholder="Firm keywords (from Apollo search)">
         </div>
         <div class="action-row">
           <button id="addLeadBtn" class="primary-btn" type="submit">Save lead</button>
@@ -136,7 +152,7 @@
 
   <script src="shared.js"></script>
   <script>
-    const { escapeHtml, withButtonBusy, setStatus, formatLeadStatus, leadEmailKey, leadCampaignNames, topbar } = window.CyRiskShared;
+    const { escapeHtml, withButtonBusy, setStatus, formatLeadStatus, leadEmailKey, leadCampaignNames, leadFirmKeywords, topbar } = window.CyRiskShared;
     document.getElementById('topbarMount').innerHTML = topbar('leads');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
@@ -160,12 +176,20 @@
     const reviewHint = document.getElementById('reviewHint');
     const bulkAssignCampaignSelect = document.getElementById('bulkAssignCampaignSelect');
     const bulkAssignBtn = document.getElementById('bulkAssignBtn');
+    const unassignCampaignSelect = document.getElementById('unassignCampaignSelect');
+    const unassignLeadsBtn = document.getElementById('unassignLeadsBtn');
+    const deleteLeadsBtn = document.getElementById('deleteLeadsBtn');
     const editAssignCampaignSelect = document.getElementById('editAssignCampaignSelect');
     const editAssignBtn = document.getElementById('editAssignBtn');
     const editLeadCampaigns = document.getElementById('editLeadCampaigns');
     const manualLeadForm = document.getElementById('manualLeadForm');
     const addLeadBtn = document.getElementById('addLeadBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const crmMissionBanner = document.getElementById('crmMissionBanner');
+    const crmMissionTitle = document.getElementById('crmMissionTitle');
+    const crmMissionMessage = document.getElementById('crmMissionMessage');
+    const crmMissionReturnBtn = document.getElementById('crmMissionReturnBtn');
+    const crmMissionDismissBtn = document.getElementById('crmMissionDismissBtn');
 
     let currentLeads = [];
     let savedCampaigns = [];
@@ -176,9 +200,51 @@
     let leadSortBy = 'name-asc';
     let leadPage = 1;
     let editingLeadEmail = '';
+    let missionAssignTo = '';
+    let missionReturnTo = '';
+    let missionCampaignName = '';
 
     function persistSelection() {
       localStorage.setItem(SELECTION_KEY, JSON.stringify([...selectedLeadEmails]));
+    }
+
+    function safeReturnHref(value) {
+      const href = String(value || '').trim();
+      if (!href) return 'index.html#campaigns-hub';
+      if (/^https?:\/\//i.test(href)) return 'index.html#campaigns-hub';
+      if (href.startsWith('leads.html')) return 'index.html#campaigns-hub';
+      return href;
+    }
+
+    function updateMissionBanner(extraMessage = '') {
+      if (!crmMissionBanner || !missionAssignTo) return;
+      const name = missionCampaignName || savedCampaigns.find((campaign) => campaign.id === missionAssignTo)?.name || 'this campaign';
+      missionCampaignName = name;
+      crmMissionTitle.textContent = `Adding leads to “${name}”`;
+      crmMissionMessage.textContent = extraMessage
+        || 'Select leads below (try Unassigned or search firm keywords), click Assign selected, then return to the campaign workflow.';
+      crmMissionReturnBtn.href = safeReturnHref(missionReturnTo);
+      crmMissionBanner.classList.add('is-visible');
+    }
+
+    function applyMissionMode() {
+      if (!missionAssignTo) return;
+      updateMissionBanner();
+
+      if ([...bulkAssignCampaignSelect.options].some((option) => option.value === missionAssignTo)) {
+        bulkAssignCampaignSelect.value = missionAssignTo;
+      }
+      if ([...editAssignCampaignSelect.options].some((option) => option.value === missionAssignTo)) {
+        editAssignCampaignSelect.value = missionAssignTo;
+      }
+
+      if (!leadAssignmentFilter || leadAssignmentFilter === 'assigned') {
+        leadAssignmentFilterInput.value = 'unassigned';
+        leadAssignmentFilter = 'unassigned';
+      }
+
+      reviewHint.textContent = `Mission: assign selected leads to “${missionCampaignName || 'this campaign'}”, then return to the workflow.`;
+      setStatus(statusMessage, `Ready to add leads to “${missionCampaignName || 'this campaign'}”.`, 'success');
     }
 
     function getFilteredSortedLeads() {
@@ -191,7 +257,7 @@
         if (leadAssignmentFilter === 'assigned' && !assigned) return false;
         if (leadAssignmentFilter.startsWith('campaign:') && !memberships.some((membership) => membership.campaign_id === leadAssignmentFilter.slice(9))) return false;
         if (!leadHubFilter) return true;
-        const haystack = [lead.first_name, lead.last_name, lead.email, lead.title, lead.firm_name, lead.city, lead.state, lead.status, formatLeadStatus(lead.status), lead.source, ...leadCampaignNames(lead)].join(' ').toLowerCase();
+        const haystack = [lead.first_name, lead.last_name, lead.email, lead.title, lead.firm_name, lead.city, lead.state, lead.status, formatLeadStatus(lead.status), lead.source, leadFirmKeywords(lead), ...leadCampaignNames(lead)].join(' ').toLowerCase();
         return haystack.includes(leadHubFilter);
       });
 
@@ -243,17 +309,31 @@
     function populateCampaignAssignSelects() {
       const bulkValue = bulkAssignCampaignSelect.value;
       const editValue = editAssignCampaignSelect.value;
+      const unassignValue = unassignCampaignSelect.value;
       bulkAssignCampaignSelect.innerHTML = campaignOptionsHtml('Assign selected to campaign...');
       editAssignCampaignSelect.innerHTML = campaignOptionsHtml('Choose campaign...');
+      unassignCampaignSelect.innerHTML = [
+        '<option value="">Remove from campaign...</option>',
+        ...(savedCampaigns.length ? ['<option value="__all__">All campaigns</option>'] : []),
+        ...savedCampaigns.map((campaign) => `<option value="${escapeHtml(campaign.id || '')}">${escapeHtml(campaign.name || 'Untitled campaign')}</option>`)
+      ].join('');
       if ([...bulkAssignCampaignSelect.options].some((option) => option.value === bulkValue)) {
         bulkAssignCampaignSelect.value = bulkValue;
       }
       if ([...editAssignCampaignSelect.options].some((option) => option.value === editValue)) {
         editAssignCampaignSelect.value = editValue;
       }
+      const preferredUnassign = unassignValue
+        || (leadAssignmentFilter.startsWith('campaign:') ? leadAssignmentFilter.slice(9) : '')
+        || '';
+      unassignCampaignSelect.value = [...unassignCampaignSelect.options].some((option) => option.value === preferredUnassign)
+        ? preferredUnassign
+        : '';
       const hasCampaigns = savedCampaigns.length > 0;
       bulkAssignBtn.disabled = !hasCampaigns;
       bulkAssignCampaignSelect.disabled = !hasCampaigns;
+      unassignLeadsBtn.disabled = !hasCampaigns;
+      unassignCampaignSelect.disabled = !hasCampaigns;
       updateEditAssignControls();
     }
 
@@ -314,7 +394,12 @@
       selectedLeadEmails.clear();
       persistSelection();
       await loadData();
-      setStatus(statusMessage, `Assigned ${result.assigned} lead${result.assigned === 1 ? '' : 's'} to ${campaignName}.`, 'success');
+      const successMessage = `Assigned ${result.assigned} lead${result.assigned === 1 ? '' : 's'} to ${campaignName}.`;
+      setStatus(statusMessage, successMessage, 'success');
+      if (missionAssignTo && campaignId === missionAssignTo) {
+        updateMissionBanner(`${successMessage} When you’re done, return to the campaign.`);
+        crmMissionReturnBtn?.focus();
+      }
     }
 
     async function assignEditingLead() {
@@ -338,6 +423,102 @@
         editAssignCampaignSelect.value = campaignId;
       }
       setStatus(statusMessage, `Added lead to ${campaignName}.`, 'success');
+      if (missionAssignTo && campaignId === missionAssignTo) {
+        updateMissionBanner(`Added this lead to ${campaignName}. When you’re done, return to the campaign.`);
+      }
+    }
+
+    async function deleteLeadsByEmails(emails, { confirmMessage } = {}) {
+      const uniqueEmails = [...new Set((emails || []).map((email) => String(email || '').trim().toLowerCase()).filter(Boolean))];
+      if (!uniqueEmails.length) {
+        setStatus(statusMessage, 'Select at least one lead to delete.', 'error');
+        return 0;
+      }
+
+      const confirmed = window.confirm(
+        confirmMessage
+        || `Delete ${uniqueEmails.length} lead${uniqueEmails.length === 1 ? '' : 's'} permanently? This removes them from your lead list and all campaigns.`
+      );
+      if (!confirmed) return 0;
+
+      setStatus(statusMessage, 'Deleting leads...', '');
+      try {
+        const response = await fetch('/.netlify/functions/delete-leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emails: uniqueEmails })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not delete leads');
+
+        const deletedEmails = new Set((result.emails || uniqueEmails).map((email) => String(email || '').trim().toLowerCase()));
+        if (editingLeadEmail && deletedEmails.has(editingLeadEmail)) cancelEdit();
+        selectedLeadEmails = new Set([...selectedLeadEmails].filter((email) => !deletedEmails.has(email)));
+        persistSelection();
+        await loadData();
+        setStatus(statusMessage, `Deleted ${result.deleted || uniqueEmails.length} lead${(result.deleted || uniqueEmails.length) === 1 ? '' : 's'}.`, 'success');
+        return result.deleted || uniqueEmails.length;
+      } catch (error) {
+        setStatus(statusMessage, error.message || 'Could not delete leads.', 'error');
+        return 0;
+      }
+    }
+
+    async function deleteSelectedLeads() {
+      await deleteLeadsByEmails([...selectedLeadEmails]);
+    }
+
+    async function deleteOneLead(email) {
+      await deleteLeadsByEmails([email], {
+        confirmMessage: `Delete ${email} permanently? This removes them from your lead list and all campaigns.`
+      });
+    }
+
+    async function unassignSelectedLeads() {
+      if (!selectedLeadEmails.size) {
+        setStatus(statusMessage, 'Select at least one lead first.', 'error');
+        return;
+      }
+
+      const value = unassignCampaignSelect.value || '';
+      if (!value) {
+        setStatus(statusMessage, 'Choose a campaign to remove the selected leads from.', 'error');
+        return;
+      }
+
+      const removeFromAll = value === '__all__';
+      const campaignId = removeFromAll ? '' : value;
+      const campaignName = removeFromAll
+        ? 'all campaigns'
+        : (savedCampaigns.find((campaign) => campaign.id === campaignId)?.name || 'the selected campaign');
+
+      setStatus(statusMessage, `Removing selected leads from ${campaignName}...`, '');
+      try {
+        const response = await fetch('/.netlify/functions/unassign-campaign-leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            emails: [...selectedLeadEmails],
+            campaignId,
+            removeFromAll
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not remove leads from campaign');
+
+        selectedLeadEmails.clear();
+        persistSelection();
+        await loadData();
+        setStatus(
+          statusMessage,
+          result.removed
+            ? `Removed ${result.removed} campaign assignment${result.removed === 1 ? '' : 's'}.`
+            : 'No campaign assignments found for the selected leads.',
+          result.removed ? 'success' : 'error'
+        );
+      } catch (error) {
+        setStatus(statusMessage, error.message || 'Could not remove leads from campaign.', 'error');
+      }
     }
 
     function renderRows(leads) {
@@ -351,7 +532,7 @@
       const pageLeads = visibleLeads.slice(pageStart, pageStart + LEAD_PAGE_SIZE);
 
       if (!leads.length) {
-        leadTableBody.innerHTML = '<tr><td colspan="12" class="muted">No leads yet. Add them from Campaign workflow.</td></tr>';
+        leadTableBody.innerHTML = '<tr><td colspan="13" class="muted">No leads yet. Add them from Campaign workflow.</td></tr>';
         leadFilterSummary.textContent = '0 leads shown';
         leadPageLabel.textContent = 'Page 1';
         leadPrevPageBtn.disabled = true;
@@ -368,7 +549,7 @@
       leadNextPageBtn.disabled = leadPage >= totalPages;
 
       if (!visibleLeads.length) {
-        leadTableBody.innerHTML = '<tr><td colspan="12" class="muted">No leads match the current filters.</td></tr>';
+        leadTableBody.innerHTML = '<tr><td colspan="13" class="muted">No leads match the current filters.</td></tr>';
         updateSelectionCount();
         return;
       }
@@ -387,8 +568,14 @@
             <td>${escapeHtml(lead.state || '-')}</td>
             <td><span class="status-chip ${escapeHtml(statusValue)}">${escapeHtml(formatLeadStatus(lead.status))}</span></td>
             <td>${escapeHtml(lead.source || '-')}</td>
+            <td>${escapeHtml(leadFirmKeywords(lead) || '') || '<span class="muted">—</span>'}</td>
             <td>${leadCampaignNames(lead).map((name) => escapeHtml(name)).join(', ') || '<span class="muted">Unassigned</span>'}</td>
-            <td><button class="secondary-btn edit-lead-btn" type="button" data-lead-email="${escapeHtml(lead.email || '')}">Edit</button></td>
+            <td>
+              <div class="row-actions">
+                <button class="secondary-btn edit-lead-btn" type="button" data-lead-email="${escapeHtml(lead.email || '')}">Edit</button>
+                <button class="secondary-btn danger-btn delete-one-lead-btn" type="button" data-lead-email="${escapeHtml(lead.email || '')}">Delete</button>
+              </div>
+            </td>
           </tr>
         `;
       }).join('');
@@ -407,6 +594,9 @@
       manualLeadForm.website.value = lead.website || '';
       manualLeadForm.city.value = lead.city || '';
       manualLeadForm.state.value = lead.state || '';
+      if (manualLeadForm.firm_keywords) {
+        manualLeadForm.firm_keywords.value = leadFirmKeywords(lead);
+      }
       addLeadBtn.textContent = 'Save lead';
       updateEditAssignControls();
       setStatus(statusMessage, `Editing ${lead.email}.`, '');
@@ -477,6 +667,8 @@
           const saved = localStorage.getItem(STORAGE_KEY);
           renderRows(saved ? JSON.parse(saved) : []);
         }
+        applyMissionMode();
+        if (missionAssignTo) renderRows(currentLeads);
       } catch (error) {
         setStatus(statusMessage, error.message || 'Could not load leads.', 'error');
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -494,8 +686,16 @@
       updateSelectionCount();
     });
     leadTableBody.addEventListener('click', (event) => {
-      const button = event.target.closest('.edit-lead-btn');
-      if (button) editLead(button.dataset.leadEmail);
+      const editButton = event.target.closest('.edit-lead-btn');
+      if (editButton) {
+        editLead(editButton.dataset.leadEmail);
+        return;
+      }
+
+      const deleteButton = event.target.closest('.delete-one-lead-btn');
+      if (deleteButton) {
+        withButtonBusy(deleteButton, () => deleteOneLead(deleteButton.dataset.leadEmail), 'Deleting...');
+      }
     });
     selectAllLeadsCheckbox.addEventListener('change', () => {
       getFilteredSortedLeads().slice((leadPage - 1) * LEAD_PAGE_SIZE, leadPage * LEAD_PAGE_SIZE).forEach((lead) => {
@@ -519,19 +719,41 @@
     });
     leadHubFilterInput.addEventListener('input', () => { leadHubFilter = leadHubFilterInput.value.trim().toLowerCase(); leadPage = 1; renderRows(currentLeads); });
     leadStatusFilterInput.addEventListener('change', () => { leadStatusFilter = leadStatusFilterInput.value; leadPage = 1; renderRows(currentLeads); });
-    leadAssignmentFilterInput.addEventListener('change', () => { leadAssignmentFilter = leadAssignmentFilterInput.value; leadPage = 1; renderRows(currentLeads); });
+    leadAssignmentFilterInput.addEventListener('change', () => {
+      leadAssignmentFilter = leadAssignmentFilterInput.value;
+      if (unassignCampaignSelect && leadAssignmentFilter.startsWith('campaign:')) {
+        const campaignId = leadAssignmentFilter.slice(9);
+        if ([...unassignCampaignSelect.options].some((option) => option.value === campaignId)) {
+          unassignCampaignSelect.value = campaignId;
+        }
+      }
+      leadPage = 1;
+      renderRows(currentLeads);
+    });
     leadSortByInput.addEventListener('change', () => { leadSortBy = leadSortByInput.value || 'name-asc'; leadPage = 1; renderRows(currentLeads); });
     leadPrevPageBtn.addEventListener('click', () => { if (leadPage <= 1) return; leadPage -= 1; renderRows(currentLeads); });
     leadNextPageBtn.addEventListener('click', () => { leadPage += 1; renderRows(currentLeads); });
     manualLeadForm.addEventListener('submit', (event) => withButtonBusy(addLeadBtn, () => saveLead(event), 'Saving lead...'));
     cancelEditBtn.addEventListener('click', cancelEdit);
     bulkAssignBtn.addEventListener('click', () => withButtonBusy(bulkAssignBtn, bulkAssignSelected, 'Assigning...'));
+    unassignLeadsBtn.addEventListener('click', () => withButtonBusy(unassignLeadsBtn, unassignSelectedLeads, 'Removing...'));
+    deleteLeadsBtn.addEventListener('click', () => withButtonBusy(deleteLeadsBtn, deleteSelectedLeads, 'Deleting...'));
     editAssignBtn.addEventListener('click', () => withButtonBusy(editAssignBtn, assignEditingLead, 'Assigning...'));
+    crmMissionDismissBtn?.addEventListener('click', () => {
+      crmMissionBanner?.classList.remove('is-visible');
+    });
 
-    const statusParam = new URLSearchParams(window.location.search).get('status');
+    const pageParams = new URLSearchParams(window.location.search);
+    const statusParam = pageParams.get('status');
     if (statusParam) {
       leadStatusFilterInput.value = statusParam;
       leadStatusFilter = statusParam;
+    }
+
+    missionAssignTo = String(pageParams.get('assignTo') || '').trim();
+    missionReturnTo = safeReturnHref(pageParams.get('return') || '');
+    if (missionAssignTo) {
+      crmMissionReturnBtn.href = missionReturnTo;
     }
 
     loadData();

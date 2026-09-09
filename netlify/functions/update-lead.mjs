@@ -15,6 +15,7 @@ export const handler = async (event) => {
       first_name: lead.first_name || '', last_name: lead.last_name || '', email,
       title: lead.title || '', firm_name: lead.firm_name || '', company: lead.company || lead.firm_name || '',
       website: lead.website || '', city: lead.city || '', state: lead.state || '', country: lead.country || '',
+      firm_keywords: lead.firm_keywords || '',
       updated_at: new Date().toISOString()
     };
 

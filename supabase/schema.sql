@@ -46,6 +46,14 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS linkedin_url TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS apollo_contact_id TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS apollo_organization_id TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS source_query TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS firm_keywords TEXT;
+
+-- Backfill firm keywords from legacy Apollo source_query values like "titles | keywords"
+UPDATE leads
+SET firm_keywords = NULLIF(TRIM(SPLIT_PART(source_query, '|', 2)), '')
+WHERE COALESCE(firm_keywords, '') = ''
+  AND source_query IS NOT NULL
+  AND position('|' in source_query) > 0;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS source_imported_at TIMESTAMPTZ;
 
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cta TEXT;

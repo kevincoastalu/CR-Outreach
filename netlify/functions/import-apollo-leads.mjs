@@ -7,6 +7,8 @@ export const handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     const leads = Array.isArray(body.leads) ? body.leads : [];
     const sourceQuery = String(body.sourceQuery || '').trim();
+    const firmKeywords = String(body.firmKeywords || '').trim()
+      || (sourceQuery.includes('|') ? sourceQuery.split('|').slice(1).join('|').trim() : '');
     if (!leads.length) return { statusCode: 400, body: JSON.stringify({ error: 'Select at least one Apollo lead' }) };
 
     const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
@@ -31,13 +33,22 @@ export const handler = async (event) => {
         title: lead.title || '', firm_name: lead.firm_name || '', company: lead.company || lead.firm_name || '',
         website: lead.website || '', linkedin_url: lead.linkedin_url || '', city: lead.city || '', state: lead.state || '', country: lead.country || '',
         apollo_contact_id: apolloId || null, apollo_organization_id: lead.apollo_organization_id || null,
-        source: 'apollo', source_query: sourceQuery, source_imported_at: new Date().toISOString(), status: 'needs_review'
+        source: 'apollo', source_query: sourceQuery, firm_keywords: firmKeywords || null,
+        source_imported_at: new Date().toISOString(), status: 'needs_review'
       };
 
-      const operation = existing?.length
+      let operation = existing?.length
         ? supabase.from('leads').update(row).eq('id', existing[0].id).select().single()
         : supabase.from('leads').insert(row).select().single();
-      const { data, error } = await operation;
+      let { data, error } = await operation;
+
+      if (error && /firm_keywords/i.test(error.message || '')) {
+        const { firm_keywords, ...legacyRow } = row;
+        operation = existing?.length
+          ? supabase.from('leads').update(legacyRow).eq('id', existing[0].id).select().single()
+          : supabase.from('leads').insert(legacyRow).select().single();
+        ({ data, error } = await operation);
+      }
       if (error) return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
       imported.push(data);
     }

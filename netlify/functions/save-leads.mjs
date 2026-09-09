@@ -32,8 +32,9 @@ export const handler = async (event) => {
       country: lead.country || '',
       slug: lead.slug || '',
       page_url: lead.page_url || '',
-      source: 'csv-upload',
-      status: 'new'
+      firm_keywords: lead.firm_keywords || null,
+      source: lead.source || 'csv-upload',
+      status: lead.status || 'new'
     }));
 
     const { data, error } = await supabase.from('leads').insert(rows).select();

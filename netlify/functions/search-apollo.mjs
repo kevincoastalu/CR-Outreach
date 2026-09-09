@@ -57,12 +57,27 @@ export const handler = async (event) => {
       companyCounts.set(company, count + 1);
       return true;
     });
+
+    const rawPagination = result.pagination && typeof result.pagination === 'object' ? result.pagination : {};
+    const totalEntries = Number(rawPagination.total_entries ?? result.total_entries ?? 0) || 0;
+    const totalPages = Number(
+      rawPagination.total_pages
+      ?? (perPage > 0 && totalEntries > 0 ? Math.ceil(totalEntries / perPage) : 0)
+    ) || 0;
+
     return {
       statusCode: 200,
       body: JSON.stringify({
         people: limitedPeople.map(normalizePerson),
-        pagination: result.pagination || {},
-        query: { titles, keywords, page, perPage }
+        pagination: {
+          page: Number(rawPagination.page) || page,
+          per_page: Number(rawPagination.per_page) || perPage,
+          total_entries: totalEntries,
+          total_pages: totalPages,
+          returned: people.length,
+          shown: limitedPeople.length
+        },
+        query: { titles, keywords, page, perPage, maxPerCompany }
       })
     };
   } catch (err) {

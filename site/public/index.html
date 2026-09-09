@@ -88,9 +88,20 @@
             </div>
           </div>
           <div id="apolloStatus" class="status-message" aria-live="polite"></div>
+          <div id="apolloSearchSummary" class="apollo-search-summary" hidden>
+            <div>
+              <strong id="apolloMatchCount">0 matches</strong>
+              <p id="apolloMatchHint" class="muted">Search to see how many prospects match your filters.</p>
+            </div>
+            <div class="apollo-search-summary-meta">
+              <span id="apolloBatchLabel">Batch —</span>
+              <span id="apolloBreadthLabel" class="apollo-breadth-chip">—</span>
+            </div>
+          </div>
           <div id="apolloResultsPanel" class="apollo-results-panel">
             <div id="apolloStickyActions" class="apollo-sticky-actions" aria-live="polite">
               <span id="apolloSelectedCount" class="selection-count">0 selected</span>
+              <span id="apolloStickyMatchCount" class="selection-count"></span>
               <button id="holdApolloTopBtn" class="primary-btn" type="button">Keep selected</button>
               <button id="apolloSearchNextBtn" class="secondary-btn" type="button">Search next batch</button>
             </div>
@@ -126,6 +137,18 @@
           <p class="muted" style="margin:0 0 14px;">Upload a CSV or enter one person at a time, then save them to your lead list.</p>
           <div class="upload-box">
             <input id="csvInput" type="file" accept=".csv,text/csv" />
+            <p class="muted" style="margin:10px 0 0; font-size:13px;">After you choose a file, match your columns to our fields—no need to edit the CSV.</p>
+            <div id="csvMappingPanel" class="csv-mapping-panel" hidden>
+              <h3>Match CSV columns to lead fields</h3>
+              <p class="muted" style="margin:0 0 12px;">We guessed where we could. Change any mapping, preview a few rows, then import.</p>
+              <div id="csvMappingFields" class="csv-mapping-grid"></div>
+              <div id="csvMappingPreview" class="csv-mapping-preview"></div>
+              <div class="action-row" style="justify-content:flex-start;">
+                <button id="applyCsvMappingBtn" class="primary-btn" type="button">Import mapped leads</button>
+                <button id="cancelCsvMappingBtn" class="secondary-btn" type="button">Cancel</button>
+                <span id="csvMappingStatus" class="selection-count"></span>
+              </div>
+            </div>
             <form id="manualLeadForm" class="manual-lead-form">
               <h3>Add a lead manually</h3>
               <div class="lead-form-grid">
@@ -153,8 +176,18 @@
 
     <section id="leads-hub" class="card panel" style="margin-bottom:24px;">
       <span class="step-label">Step 2</span>
-      <div class="hub-heading"><h2>Review &amp; select leads</h2><span class="info-tip" tabindex="0" role="img" aria-label="About reviewing leads" data-tip="Check the prospects you want for the campaign you are creating in Step 3. Your selection carries forward automatically.">i</span></div>
-      <p class="section-intro">Check the prospects for <strong>this</strong> campaign (Apollo imports, uploads, or existing leads). That selection is what Step 3 assigns after you save. For full CRM tools, open <a href="leads.html" style="color:var(--accent);">Leads</a>.</p>
+      <div class="hub-heading"><h2>Review &amp; select leads</h2><span class="info-tip" tabindex="0" role="img" aria-label="About reviewing leads" data-tip="This list includes every saved lead—not just new Apollo imports. Check prospects here, or open Leads CRM to browse with firm keywords and bulk-assign back to this campaign.">i</span></div>
+      <p class="section-intro">This table is your full lead list (Apollo imports, uploads, and older contacts). Check people for <strong>this</strong> campaign, then assign them in Step 3 after you save.</p>
+      <div id="existingLeadsCue" class="workflow-cue">
+        <div>
+          <strong>Need existing leads?</strong>
+          <p id="existingLeadsCueMessage">Select them here, or open the Leads CRM to search by firm keywords and assign in bulk.</p>
+        </div>
+        <div class="action-row" style="margin:0;">
+          <button id="filterUnassignedBtn" class="secondary-btn" type="button">Show unassigned only</button>
+          <a id="openCrmForCampaignBtn" class="secondary-btn" href="leads.html" style="display:inline-block; text-decoration:none;">Browse Leads CRM</a>
+        </div>
+      </div>
       <div class="lead-toolbar">
         <div class="field">
           <label for="leadHubFilter">Search</label>
@@ -193,6 +226,11 @@
       <div class="lead-selection-bar">
         <button id="selectAllLeadsBtn" class="secondary-btn" type="button">Select all matching</button>
         <button id="clearLeadSelectionBtn" class="secondary-btn" type="button">Clear selection</button>
+        <select id="unassignCampaignSelect" aria-label="Campaign to remove selected leads from">
+          <option value="">Remove from campaign...</option>
+        </select>
+        <button id="unassignLeadsBtn" class="secondary-btn" type="button">Remove from campaign</button>
+        <button id="deleteLeadsBtn" class="secondary-btn danger-btn" type="button">Delete selected</button>
         <span id="selectionCount" class="selection-count">0 leads selected</span>
         <span id="reviewHint" class="selection-count">Select leads for the campaign you will create in Step 3.</span>
       </div>
@@ -217,13 +255,14 @@
               <th>City</th>
               <th>State</th>
               <th>Status</th>
+              <th>Firm keywords</th>
               <th>Campaigns</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody id="leadTableBody">
             <tr>
-              <td colspan="11" class="muted">No leads yet. Import from Apollo or add your own in Step 1.</td>
+              <td colspan="12" class="muted">No leads yet. Import from Apollo or add your own in Step 1.</td>
             </tr>
           </tbody>
         </table>
@@ -280,10 +319,11 @@
 
       <div class="assign-panel" style="margin-top:18px; padding-top:16px; border-top:1px solid var(--border);">
         <h3 style="margin:0 0 8px; font-size:16px;">Assign Step 2 leads to this campaign</h3>
-        <p class="muted" style="margin:0 0 12px;">Uses the leads you checked in Step 2. They attach only to the campaign you are writing above. To assign other existing leads to any campaign, use the <a href="leads.html" style="color:var(--accent);">Leads</a> hub.</p>
+        <p class="muted" style="margin:0 0 12px;">Attaches the leads checked in Step 2 to the campaign above. Want to pull in more existing contacts with CRM filters? Use the button below—you’ll return here when finished.</p>
         <p id="assignTargetLabel" class="selection-count" style="margin:0 0 12px;">Campaign target: save this campaign first.</p>
         <div class="lead-selection-bar">
           <button id="assignLeadsBtn" class="primary-btn" type="button">Assign selected leads to this campaign</button>
+          <a id="crmAssignRoundTripBtn" class="secondary-btn" href="leads.html" style="display:inline-block; text-decoration:none;">Add more from Leads CRM</a>
           <span id="assignSelectionCount" class="selection-count">0 leads selected</span>
           <span id="assignmentHint" class="selection-count">Save this campaign before assigning leads.</span>
         </div>
@@ -333,6 +373,12 @@
     const launchesPreparedCountEl = document.getElementById('launchesPreparedCount');
     const leadTableBody = document.getElementById('leadTableBody');
     const csvInput = document.getElementById('csvInput');
+    const csvMappingPanel = document.getElementById('csvMappingPanel');
+    const csvMappingFields = document.getElementById('csvMappingFields');
+    const csvMappingPreview = document.getElementById('csvMappingPreview');
+    const csvMappingStatus = document.getElementById('csvMappingStatus');
+    const applyCsvMappingBtn = document.getElementById('applyCsvMappingBtn');
+    const cancelCsvMappingBtn = document.getElementById('cancelCsvMappingBtn');
     const saveLeadsBtn = document.getElementById('saveLeadsBtn');
     const manualLeadForm = document.getElementById('manualLeadForm');
     const statusMessage = document.getElementById('statusMessage');
@@ -370,7 +416,13 @@
     const apolloNextTitle = document.getElementById('apolloNextTitle');
     const apolloNextMessage = document.getElementById('apolloNextMessage');
     const apolloSelectedCount = document.getElementById('apolloSelectedCount');
+    const apolloStickyMatchCount = document.getElementById('apolloStickyMatchCount');
     const apolloResultsPanel = document.getElementById('apolloResultsPanel');
+    const apolloSearchSummary = document.getElementById('apolloSearchSummary');
+    const apolloMatchCount = document.getElementById('apolloMatchCount');
+    const apolloMatchHint = document.getElementById('apolloMatchHint');
+    const apolloBatchLabel = document.getElementById('apolloBatchLabel');
+    const apolloBreadthLabel = document.getElementById('apolloBreadthLabel');
     const enrichApolloBtn = document.getElementById('enrichApolloBtn');
     const importApolloBtn = document.getElementById('importApolloBtn');
     const apolloStatus = document.getElementById('apolloStatus');
@@ -381,8 +433,15 @@
     const selectAllLeadsBtn = document.getElementById('selectAllLeadsBtn');
     const clearLeadSelectionBtn = document.getElementById('clearLeadSelectionBtn');
     const selectAllLeadsCheckbox = document.getElementById('selectAllLeadsCheckbox');
+    const unassignCampaignSelect = document.getElementById('unassignCampaignSelect');
+    const unassignLeadsBtn = document.getElementById('unassignLeadsBtn');
+    const deleteLeadsBtn = document.getElementById('deleteLeadsBtn');
     const assignLeadsBtn = document.getElementById('assignLeadsBtn');
     const assignTargetLabel = document.getElementById('assignTargetLabel');
+    const crmAssignRoundTripBtn = document.getElementById('crmAssignRoundTripBtn');
+    const openCrmForCampaignBtn = document.getElementById('openCrmForCampaignBtn');
+    const filterUnassignedBtn = document.getElementById('filterUnassignedBtn');
+    const existingLeadsCueMessage = document.getElementById('existingLeadsCueMessage');
     const selectionCount = document.getElementById('selectionCount');
     const assignSelectionCount = document.getElementById('assignSelectionCount');
     const assignmentHint = document.getElementById('assignmentHint');
@@ -417,6 +476,14 @@
     let apolloHeldLeads = JSON.parse(localStorage.getItem('cyrisk-apollo-held-leads') || '[]');
     let apolloSearchPage = 0;
     let apolloLastSearchKey = '';
+    let apolloSearchMeta = {
+      totalEntries: 0,
+      totalPages: 0,
+      page: 0,
+      perPage: 0,
+      returned: 0,
+      shown: 0
+    };
     let selectedLeadEmails = new Set(JSON.parse(localStorage.getItem(SELECTION_KEY) || '[]'));
     let leadHubFilter = '';
     let leadStatusFilter = '';
@@ -590,6 +657,102 @@
         .filter(Boolean);
     }
 
+    function formatApolloCount(value) {
+      const number = Number(value) || 0;
+      return number.toLocaleString('en-US');
+    }
+
+    function apolloBreadthInfo(totalEntries) {
+      const total = Number(totalEntries) || 0;
+      if (total <= 0) {
+        return {
+          key: 'empty',
+          label: 'No matches',
+          hint: 'No prospects match these filters. Broaden titles or firm keywords.'
+        };
+      }
+      if (total < 25) {
+        return {
+          key: 'narrow',
+          label: 'Narrow',
+          hint: 'Very few matches—broaden titles or firm keywords if you need a larger pool.'
+        };
+      }
+      if (total <= 500) {
+        return {
+          key: 'focused',
+          label: 'Focused',
+          hint: 'A manageable pool to review in batches.'
+        };
+      }
+      if (total <= 5000) {
+        return {
+          key: 'broad',
+          label: 'Broad',
+          hint: 'Large pool—tighten titles or firm keywords if review feels endless.'
+        };
+      }
+      return {
+        key: 'very-broad',
+        label: 'Very broad',
+        hint: 'Huge pool—add more specific titles or keywords before reviewing many batches.'
+      };
+    }
+
+    function updateApolloSearchSummary({ batchShown = apolloSearchResults.length } = {}) {
+      if (!apolloSearchSummary) return;
+      const totalEntries = Number(apolloSearchMeta.totalEntries) || 0;
+      const totalPages = Number(apolloSearchMeta.totalPages) || 0;
+      const page = Number(apolloSearchMeta.page) || apolloSearchPage || 0;
+      const hasSearch = Boolean(apolloLastSearchKey);
+
+      if (!hasSearch) {
+        apolloSearchSummary.hidden = true;
+        if (apolloStickyMatchCount) apolloStickyMatchCount.textContent = '';
+        return;
+      }
+
+      apolloSearchSummary.hidden = false;
+      const breadth = apolloBreadthInfo(totalEntries);
+      if (apolloMatchCount) {
+        apolloMatchCount.textContent = totalEntries
+          ? `${formatApolloCount(totalEntries)} matching prospect${totalEntries === 1 ? '' : 's'}`
+          : 'No matching prospects';
+      }
+      if (apolloMatchHint) {
+        const batchNote = batchShown
+          ? `Showing ${formatApolloCount(batchShown)} in this batch`
+          : 'No new prospects in this batch';
+        const companyNote = Number(apolloSearchMeta.returned) > Number(apolloSearchMeta.shown)
+          ? ` (${formatApolloCount(apolloSearchMeta.shown)} after max-per-company filter)`
+          : '';
+        apolloMatchHint.textContent = `${batchNote}${companyNote}. ${breadth.hint}`;
+      }
+      if (apolloBatchLabel) {
+        apolloBatchLabel.textContent = totalPages
+          ? `Batch ${formatApolloCount(page)} of ${formatApolloCount(totalPages)}`
+          : `Batch ${formatApolloCount(page) || '—'}`;
+      }
+      if (apolloBreadthLabel) {
+        apolloBreadthLabel.textContent = breadth.label;
+        apolloBreadthLabel.className = `apollo-breadth-chip is-${breadth.key}`;
+      }
+      if (apolloStickyMatchCount) {
+        apolloStickyMatchCount.textContent = totalEntries
+          ? `${formatApolloCount(totalEntries)} total · batch ${formatApolloCount(page)}${totalPages ? `/${formatApolloCount(totalPages)}` : ''}`
+          : '';
+      }
+
+      const hasMore = totalPages ? page < totalPages : batchShown > 0;
+      [apolloSearchNextBtn, apolloSearchNextBottomBtn, apolloNextBatchBtn].forEach((button) => {
+        if (!button) return;
+        button.disabled = !hasMore && totalPages > 0;
+        button.title = hasMore || !totalPages
+          ? 'Load the next page of Apollo matches'
+          : 'You are on the last page for this search';
+      });
+    }
+
     async function searchApollo({ forceNextPage = false, scrollToResults = true } = {}) {
       const titles = apolloTitlesInput.value.split(',').map((value) => value.trim()).filter(Boolean);
       const keywords = apolloKeywordsInput.value.trim();
@@ -620,15 +783,43 @@
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Apollo search failed');
+
+        const pagination = result.pagination || {};
+        apolloSearchMeta = {
+          totalEntries: Number(pagination.total_entries) || 0,
+          totalPages: Number(pagination.total_pages) || 0,
+          page: Number(pagination.page) || apolloSearchPage,
+          perPage: Number(pagination.per_page) || perPage,
+          returned: Number(pagination.returned) || 0,
+          shown: Number(pagination.shown) || 0
+        };
+        apolloSearchPage = apolloSearchMeta.page || apolloSearchPage;
+
         const heldIds = new Set(apolloHeldLeads.map((lead) => lead.apollo_contact_id));
         apolloSearchResults = (Array.isArray(result.people) ? result.people : [])
           .filter((lead) => lead.apollo_contact_id && !heldIds.has(lead.apollo_contact_id));
         renderApolloResults();
+        updateApolloSearchSummary({ batchShown: apolloSearchResults.length });
         if (scrollToResults) scrollToApolloResultsTop();
+
+        const breadth = apolloBreadthInfo(apolloSearchMeta.totalEntries);
+        const totalLabel = apolloSearchMeta.totalEntries
+          ? `${formatApolloCount(apolloSearchMeta.totalEntries)} total matches`
+          : '0 total matches';
+        const batchLabel = apolloSearchMeta.totalPages
+          ? `batch ${apolloSearchPage} of ${formatApolloCount(apolloSearchMeta.totalPages)}`
+          : `batch ${apolloSearchPage}`;
+
         if (!apolloSearchResults.length) {
-          setApolloStatus(`No new prospects in batch ${apolloSearchPage}. Try another search or review your saved list.`, 'error');
+          setApolloStatus(
+            `No new prospects in ${batchLabel} (${totalLabel}). ${breadth.hint}`,
+            'error'
+          );
         } else {
-          setApolloStatus(`Batch ${apolloSearchPage}: ${apolloSearchResults.length} prospects. Select and Keep, or tap Keep on any row.`, 'success');
+          setApolloStatus(
+            `${totalLabel} · showing ${apolloSearchResults.length} in ${batchLabel}. ${breadth.label}: ${breadth.hint}`,
+            'success'
+          );
         }
       } catch (error) {
         setApolloStatus(error.message || 'Apollo search failed.', 'error');
@@ -654,7 +845,13 @@
       apolloSearchResults = apolloSearchResults.filter((lead) => !addedIds.has(lead.apollo_contact_id));
       persistApolloQueue();
       renderApolloResults();
-      setApolloStatus(`Kept ${added.length} prospect${added.length === 1 ? '' : 's'}. ${apolloHeldLeads.length} saved for import.`, 'success');
+      updateApolloSearchSummary({ batchShown: apolloSearchResults.length });
+      setApolloStatus(
+        `Kept ${added.length} prospect${added.length === 1 ? '' : 's'}. ${apolloHeldLeads.length} saved for import`
+          + (apolloSearchMeta.totalEntries ? ` · ${formatApolloCount(apolloSearchMeta.totalEntries)} total matches for this search` : '')
+          + '.',
+        'success'
+      );
 
       if (promptNext || !apolloSearchResults.length) {
         showApolloNextPanel(added.length);
@@ -693,7 +890,11 @@
       try {
         const response = await fetch('/.netlify/functions/import-apollo-leads', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leads: selected, sourceQuery: `${apolloTitlesInput.value} | ${apolloKeywordsInput.value}` })
+          body: JSON.stringify({
+            leads: selected,
+            sourceQuery: `${apolloTitlesInput.value} | ${apolloKeywordsInput.value}`,
+            firmKeywords: apolloKeywordsInput.value.trim()
+          })
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Apollo import failed');
@@ -789,18 +990,275 @@
         rows.push(row);
       }
 
-      if (!rows.length) return [];
+      if (!rows.length) return { headers: [], rows: [] };
 
-      const header = rows[0].map((name) => name.trim());
-      return rows.slice(1)
-        .filter((r) => r.some((cell) => (cell || '').trim() !== ''))
-        .map((values) => {
-          const obj = {};
-          header.forEach((key, index) => {
-            obj[key] = (values[index] || '').trim();
-          });
-          return obj;
-        });
+      const headers = rows[0].map((name) => String(name || '').trim());
+      const dataRows = rows.slice(1).filter((cells) => cells.some((cell) => String(cell || '').trim() !== ''));
+      return { headers, rows: dataRows };
+    }
+
+    const CSV_SCHEMA_FIELDS = [
+      { key: 'full_name', label: 'Full name', hint: 'Splits into first + last if those are empty', required: false },
+      { key: 'first_name', label: 'First name', required: false },
+      { key: 'last_name', label: 'Last name', required: false },
+      { key: 'email', label: 'Email', required: true },
+      { key: 'title', label: 'Title', required: false },
+      { key: 'firm_name', label: 'Firm name', required: false },
+      { key: 'website', label: 'Website', required: false },
+      { key: 'city', label: 'City', required: false },
+      { key: 'state', label: 'State', required: false },
+      { key: 'country', label: 'Country', required: false },
+      { key: 'firm_keywords', label: 'Firm keywords', required: false }
+    ];
+
+    const CSV_FIELD_ALIASES = {
+      full_name: ['full name', 'fullname', 'contact name', 'contact', 'full_name', 'fullname', 'person'],
+      first_name: ['first name', 'firstname', 'first', 'fname', 'given name', 'given_name', 'first_name'],
+      last_name: ['last name', 'lastname', 'last', 'lname', 'surname', 'family name', 'last_name'],
+      email: ['email', 'e-mail', 'email address', 'email_address', 'work email', 'work_email', 'mail'],
+      title: ['title', 'job title', 'job_title', 'position', 'role'],
+      firm_name: ['firm name', 'firm', 'firm_name', 'company', 'company name', 'organization', 'org', 'law firm'],
+      website: ['website', 'web', 'url', 'company website', 'domain', 'site'],
+      city: ['city', 'town', 'locality'],
+      state: ['state', 'province', 'region', 'st'],
+      country: ['country', 'nation'],
+      firm_keywords: ['firm keywords', 'keywords', 'firm_keywords', 'practice', 'practice area', 'tags']
+    };
+
+    const CSV_MAPPING_STORAGE_KEY = 'cyrisk-csv-column-mapping';
+    let pendingCsv = null;
+
+    function normalizeHeaderKey(value) {
+      return String(value || '').trim().toLowerCase().replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ');
+    }
+
+    function guessCsvMapping(headers) {
+      const mapping = {};
+      const normalizedHeaders = headers.map((header) => ({
+        header,
+        norm: normalizeHeaderKey(header)
+      }));
+      const used = new Set();
+
+      const saved = (() => {
+        try {
+          return JSON.parse(localStorage.getItem(CSV_MAPPING_STORAGE_KEY) || '{}');
+        } catch (error) {
+          return {};
+        }
+      })();
+
+      CSV_SCHEMA_FIELDS.forEach((field) => {
+        const savedHeader = saved[field.key];
+        if (savedHeader && headers.includes(savedHeader) && !used.has(savedHeader)) {
+          mapping[field.key] = savedHeader;
+          used.add(savedHeader);
+          return;
+        }
+
+        const aliases = CSV_FIELD_ALIASES[field.key] || [normalizeHeaderKey(field.key)];
+        const match = normalizedHeaders.find((item) => !used.has(item.header) && aliases.includes(item.norm));
+        if (match) {
+          mapping[field.key] = match.header;
+          used.add(match.header);
+        } else {
+          mapping[field.key] = '';
+        }
+      });
+
+      return mapping;
+    }
+
+    function readCsvMappingFromUi() {
+      const mapping = {};
+      CSV_SCHEMA_FIELDS.forEach((field) => {
+        const select = csvMappingFields.querySelector(`select[data-schema-field="${field.key}"]`);
+        mapping[field.key] = select ? select.value : '';
+      });
+      return mapping;
+    }
+
+    function valueFromCsvRow(headers, cells, columnName) {
+      if (!columnName) return '';
+      const index = headers.indexOf(columnName);
+      if (index < 0) return '';
+      return String(cells[index] || '').trim();
+    }
+
+    function splitFullName(fullName) {
+      const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return { first_name: '', last_name: '' };
+      if (parts.length === 1) return { first_name: parts[0], last_name: '' };
+      return { first_name: parts[0], last_name: parts.slice(1).join(' ') };
+    }
+
+    function mapCsvRowToLead(headers, cells, mapping) {
+      const lead = {
+        first_name: valueFromCsvRow(headers, cells, mapping.first_name),
+        last_name: valueFromCsvRow(headers, cells, mapping.last_name),
+        email: valueFromCsvRow(headers, cells, mapping.email).toLowerCase(),
+        title: valueFromCsvRow(headers, cells, mapping.title),
+        firm_name: valueFromCsvRow(headers, cells, mapping.firm_name),
+        website: valueFromCsvRow(headers, cells, mapping.website),
+        city: valueFromCsvRow(headers, cells, mapping.city),
+        state: valueFromCsvRow(headers, cells, mapping.state),
+        country: valueFromCsvRow(headers, cells, mapping.country),
+        firm_keywords: valueFromCsvRow(headers, cells, mapping.firm_keywords),
+        source: 'csv-upload',
+        status: 'new'
+      };
+
+      if ((!lead.first_name || !lead.last_name) && mapping.full_name) {
+        const split = splitFullName(valueFromCsvRow(headers, cells, mapping.full_name));
+        if (!lead.first_name) lead.first_name = split.first_name;
+        if (!lead.last_name) lead.last_name = split.last_name;
+      }
+
+      lead.company = lead.firm_name;
+      return lead;
+    }
+
+    function mapCsvRowsToLeads(headers, rows, mapping) {
+      return rows
+        .map((cells) => mapCsvRowToLead(headers, cells, mapping))
+        .filter((lead) => lead.email || lead.first_name || lead.last_name || lead.firm_name);
+    }
+
+    function renderCsvMappingPreview(mapping = readCsvMappingFromUi()) {
+      if (!pendingCsv || !csvMappingPreview) return;
+      const mapped = mapCsvRowsToLeads(pendingCsv.headers, pendingCsv.rows, mapping).slice(0, 3);
+      const missingEmail = mapped.filter((lead) => !lead.email).length;
+      const totalMapped = mapCsvRowsToLeads(pendingCsv.headers, pendingCsv.rows, mapping).length;
+
+      if (csvMappingStatus) {
+        csvMappingStatus.textContent = `${totalMapped} row${totalMapped === 1 ? '' : 's'} ready`
+          + (missingEmail ? ` · ${missingEmail} of first 3 preview rows missing email` : '');
+      }
+
+      if (!mapped.length) {
+        csvMappingPreview.innerHTML = '<p class="muted" style="margin:0;">No preview rows yet. Adjust mappings above.</p>';
+        return;
+      }
+
+      csvMappingPreview.innerHTML = `
+        <p class="muted" style="margin:0 0 8px;">Preview (first ${mapped.length} mapped row${mapped.length === 1 ? '' : 's'})</p>
+        <table>
+          <thead>
+            <tr>
+              <th>First name</th>
+              <th>Last name</th>
+              <th>Email</th>
+              <th>Title</th>
+              <th>Firm</th>
+              <th>Firm keywords</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${mapped.map((lead) => `
+              <tr>
+                <td>${escapeHtml(lead.first_name || '—')}</td>
+                <td>${escapeHtml(lead.last_name || '—')}</td>
+                <td>${escapeHtml(lead.email || '—')}</td>
+                <td>${escapeHtml(lead.title || '—')}</td>
+                <td>${escapeHtml(lead.firm_name || '—')}</td>
+                <td>${escapeHtml(lead.firm_keywords || '—')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderCsvMappingPanel() {
+      if (!pendingCsv || !csvMappingPanel || !csvMappingFields) return;
+      const mapping = guessCsvMapping(pendingCsv.headers);
+      const options = ['<option value="">Skip this field</option>']
+        .concat(pendingCsv.headers.map((header) => `<option value="${escapeHtml(header)}">${escapeHtml(header || '(blank header)')}</option>`))
+        .join('');
+
+      csvMappingFields.innerHTML = CSV_SCHEMA_FIELDS.map((field) => `
+        <div class="csv-map-field">
+          <label for="csvMap_${field.key}">
+            ${escapeHtml(field.label)}
+            ${field.required ? '<span class="req">*</span>' : ''}
+            ${field.hint ? `<span class="info-tip" tabindex="0" role="img" aria-label="${escapeHtml(field.hint)}" data-tip="${escapeHtml(field.hint)}">i</span>` : ''}
+          </label>
+          <select id="csvMap_${field.key}" data-schema-field="${field.key}" aria-label="CSV column for ${escapeHtml(field.label)}">
+            ${options}
+          </select>
+        </div>
+      `).join('');
+
+      CSV_SCHEMA_FIELDS.forEach((field) => {
+        const select = csvMappingFields.querySelector(`select[data-schema-field="${field.key}"]`);
+        if (select && mapping[field.key]) select.value = mapping[field.key];
+      });
+
+      csvMappingPanel.hidden = false;
+      renderCsvMappingPreview(mapping);
+      setStatus(`Loaded ${pendingCsv.rows.length} CSV row${pendingCsv.rows.length === 1 ? '' : 's'}. Match columns, then import.`, 'success');
+    }
+
+    function clearCsvMappingPanel() {
+      pendingCsv = null;
+      if (csvMappingPanel) csvMappingPanel.hidden = true;
+      if (csvMappingFields) csvMappingFields.innerHTML = '';
+      if (csvMappingPreview) csvMappingPreview.innerHTML = '';
+      if (csvMappingStatus) csvMappingStatus.textContent = '';
+      if (csvInput) csvInput.value = '';
+    }
+
+    function importMappedCsvLeads() {
+      if (!pendingCsv) {
+        setStatus('Choose a CSV file first.', 'error');
+        return;
+      }
+
+      const mapping = readCsvMappingFromUi();
+      if (!mapping.email) {
+        setStatus('Map an Email column before importing.', 'error');
+        return;
+      }
+
+      const mappedLeads = mapCsvRowsToLeads(pendingCsv.headers, pendingCsv.rows, mapping)
+        .filter((lead) => lead.email);
+
+      if (!mappedLeads.length) {
+        setStatus('No rows with email found using the current mapping.', 'error');
+        return;
+      }
+
+      localStorage.setItem(CSV_MAPPING_STORAGE_KEY, JSON.stringify(mapping));
+
+      const existingEmails = new Set(currentLeads.map(leadEmailKey).filter(Boolean));
+      const newLeads = [];
+      let skippedDuplicates = 0;
+      mappedLeads.forEach((lead) => {
+        const email = leadEmailKey(lead);
+        if (!email) return;
+        if (existingEmails.has(email)) {
+          skippedDuplicates += 1;
+          return;
+        }
+        existingEmails.add(email);
+        newLeads.push(lead);
+      });
+
+      if (!newLeads.length) {
+        setStatus(`No new leads imported${skippedDuplicates ? ` (${skippedDuplicates} already in your list)` : ''}.`, 'error');
+        return;
+      }
+
+      renderRows([...currentLeads, ...newLeads]);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLeads));
+      clearCsvMappingPanel();
+      setStatus(
+        `Imported ${newLeads.length} lead${newLeads.length === 1 ? '' : 's'} from CSV`
+          + (skippedDuplicates ? ` (${skippedDuplicates} duplicate email${skippedDuplicates === 1 ? '' : 's'} skipped)` : '')
+          + '. Click Save leads when ready.',
+        'success'
+      );
+      document.getElementById('leads-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function formatLeadStatus(status) {
@@ -818,6 +1276,15 @@
       return (lead.campaign_leads || [])
         .map((membership) => membership.campaigns?.name || '')
         .filter(Boolean);
+    }
+
+    function leadFirmKeywords(lead) {
+      const direct = String(lead?.firm_keywords || '').trim();
+      if (direct) return direct;
+      const sourceQuery = String(lead?.source_query || '').trim();
+      if (!sourceQuery) return '';
+      if (sourceQuery.includes('|')) return sourceQuery.split('|').slice(1).join('|').trim();
+      return sourceQuery;
     }
 
     function getFilteredSortedLeads() {
@@ -844,6 +1311,7 @@
           lead.state,
           lead.status,
           formatLeadStatus(lead.status),
+          leadFirmKeywords(lead),
           ...leadCampaignNames(lead)
         ].join(' ').toLowerCase();
         return haystack.includes(leadHubFilter);
@@ -891,7 +1359,7 @@
       const pageLeads = visibleLeads.slice(pageStart, pageStart + LEAD_PAGE_SIZE);
 
       if (!leads.length) {
-        leadTableBody.innerHTML = '<tr><td colspan="11" class="muted">No leads yet. Import from Apollo or add your own in Step 1.</td></tr>';
+        leadTableBody.innerHTML = '<tr><td colspan="12" class="muted">No leads yet. Import from Apollo or add your own in Step 1.</td></tr>';
         leadCountEl.textContent = '0';
         leadFilterSummary.textContent = '0 leads shown';
         leadPageLabel.textContent = 'Page 1';
@@ -911,7 +1379,7 @@
       leadNextPageBtn.disabled = leadPage >= totalPages;
 
       if (!visibleLeads.length) {
-        leadTableBody.innerHTML = '<tr><td colspan="11" class="muted">No leads match the current filters.</td></tr>';
+        leadTableBody.innerHTML = '<tr><td colspan="12" class="muted">No leads match the current filters.</td></tr>';
         updateSelectionCount();
         updateWorkflowProgress();
         return;
@@ -930,8 +1398,14 @@
           <td>${escapeHtml(lead.city || '-')}</td>
           <td>${escapeHtml(lead.state || '-')}</td>
           <td><span class="status-chip ${escapeHtml(statusValue)}">${escapeHtml(formatLeadStatus(lead.status))}</span></td>
+          <td>${escapeHtml(leadFirmKeywords(lead) || '') || '<span class="muted">—</span>'}</td>
           <td>${leadCampaignNames(lead).map((name) => escapeHtml(name)).join(', ') || '<span class="muted">Unassigned</span>'}</td>
-          <td><button class="secondary-btn edit-lead-btn" type="button" data-lead-email="${escapeHtml(lead.email || '')}">Edit</button></td>
+          <td>
+            <div class="row-actions">
+              <button class="secondary-btn edit-lead-btn" type="button" data-lead-email="${escapeHtml(lead.email || '')}">Edit</button>
+              <button class="secondary-btn danger-btn delete-one-lead-btn" type="button" data-lead-email="${escapeHtml(lead.email || '')}">Delete</button>
+            </div>
+          </td>
         </tr>
       `;
       }).join('');
@@ -947,13 +1421,51 @@
       return saved?.name || 'this campaign';
     }
 
+    function crmAssignRoundTripHref(campaignId = currentCampaignId) {
+      if (!campaignId) return 'leads.html';
+      const returnTo = `index.html?campaign=${encodeURIComponent(campaignId)}#campaigns-hub`;
+      return `leads.html?assignTo=${encodeURIComponent(campaignId)}&return=${encodeURIComponent(returnTo)}`;
+    }
+
+    function updateExistingLeadsCtas() {
+      const href = crmAssignRoundTripHref();
+      const campaignReady = Boolean(currentCampaignId);
+      const name = currentCampaignName();
+
+      if (openCrmForCampaignBtn) {
+        openCrmForCampaignBtn.href = href;
+        openCrmForCampaignBtn.textContent = campaignReady
+          ? `Add existing leads in CRM`
+          : 'Browse Leads CRM';
+      }
+
+      if (crmAssignRoundTripBtn) {
+        crmAssignRoundTripBtn.href = href;
+        crmAssignRoundTripBtn.classList.toggle('is-disabled', !campaignReady);
+        crmAssignRoundTripBtn.setAttribute('aria-disabled', campaignReady ? 'false' : 'true');
+        if (!campaignReady) {
+          crmAssignRoundTripBtn.title = 'Save this campaign first so CRM can attach leads to it.';
+        } else {
+          crmAssignRoundTripBtn.removeAttribute('title');
+        }
+      }
+
+      if (existingLeadsCueMessage) {
+        existingLeadsCueMessage.textContent = campaignReady
+          ? `Select them in this table, or open Leads CRM to search/filter and assign directly to “${name}”—you’ll return here when done.`
+          : 'Select them in this table now (assign after you save in Step 3), or browse Leads CRM. After you save the campaign, CRM can assign straight back to it.';
+      }
+    }
+
     function updateAssignTargetLabel() {
       if (!assignTargetLabel) return;
       if (!currentCampaignId) {
         assignTargetLabel.textContent = 'Campaign target: save this campaign first.';
+        updateExistingLeadsCtas();
         return;
       }
       assignTargetLabel.textContent = `Campaign target: ${currentCampaignName()}`;
+      updateExistingLeadsCtas();
     }
 
     function updateSelectionCount() {
@@ -996,8 +1508,120 @@
         ? previousAssignment
         : '';
       leadAssignmentFilter = leadAssignmentFilterInput.value;
+
+      if (unassignCampaignSelect) {
+        const previousUnassign = unassignCampaignSelect.value;
+        unassignCampaignSelect.innerHTML = [
+          '<option value="">Remove from campaign...</option>',
+          '<option value="__all__">All campaigns</option>',
+          ...savedCampaigns.map((campaign) => `<option value="${escapeHtml(campaign.id || '')}">${escapeHtml(campaign.name || 'Untitled campaign')}</option>`)
+        ].join('');
+        const preferred = previousUnassign
+          || (leadAssignmentFilter.startsWith('campaign:') ? leadAssignmentFilter.slice(9) : '')
+          || currentCampaignId
+          || '';
+        unassignCampaignSelect.value = [...unassignCampaignSelect.options].some((option) => option.value === preferred)
+          ? preferred
+          : '';
+      }
+
       updateAssignTargetLabel();
       if (currentLeads.length) renderRows(currentLeads);
+    }
+
+    async function deleteLeadsByEmails(emails, { confirmMessage } = {}) {
+      const uniqueEmails = [...new Set((emails || []).map((email) => String(email || '').trim().toLowerCase()).filter(Boolean))];
+      if (!uniqueEmails.length) {
+        setStatus('Select at least one lead to delete.', 'error');
+        return 0;
+      }
+
+      const confirmed = window.confirm(
+        confirmMessage
+        || `Delete ${uniqueEmails.length} lead${uniqueEmails.length === 1 ? '' : 's'} permanently? This removes them from your lead list and all campaigns.`
+      );
+      if (!confirmed) return 0;
+
+      setStatus('Deleting leads...', '');
+      try {
+        const response = await fetch('/.netlify/functions/delete-leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emails: uniqueEmails })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not delete leads');
+
+        const deletedEmails = new Set((result.emails || uniqueEmails).map((email) => String(email || '').trim().toLowerCase()));
+        currentLeads = currentLeads.filter((lead) => !deletedEmails.has(leadEmailKey(lead)));
+        selectedLeadEmails = new Set([...selectedLeadEmails].filter((email) => !deletedEmails.has(email)));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLeads));
+        localStorage.setItem(SELECTION_KEY, JSON.stringify([...selectedLeadEmails]));
+        await loadLeadHub();
+        await loadSavedCampaigns();
+        setStatus(`Deleted ${result.deleted || uniqueEmails.length} lead${(result.deleted || uniqueEmails.length) === 1 ? '' : 's'}.`, 'success');
+        return result.deleted || uniqueEmails.length;
+      } catch (error) {
+        setStatus(error.message || 'Could not delete leads.', 'error');
+        return 0;
+      }
+    }
+
+    async function deleteSelectedLeads() {
+      await deleteLeadsByEmails([...selectedLeadEmails]);
+    }
+
+    async function deleteOneLead(email) {
+      await deleteLeadsByEmails([email], {
+        confirmMessage: `Delete ${email} permanently? This removes them from your lead list and all campaigns.`
+      });
+    }
+
+    async function unassignSelectedLeads() {
+      if (!selectedLeadEmails.size) {
+        setStatus('Select at least one lead first.', 'error');
+        return;
+      }
+
+      const value = unassignCampaignSelect?.value || '';
+      if (!value) {
+        setStatus('Choose a campaign to remove the selected leads from.', 'error');
+        return;
+      }
+
+      const removeFromAll = value === '__all__';
+      const campaignId = removeFromAll ? '' : value;
+      const campaignName = removeFromAll
+        ? 'all campaigns'
+        : (savedCampaigns.find((campaign) => campaign.id === campaignId)?.name || 'the selected campaign');
+
+      setStatus(`Removing selected leads from ${campaignName}...`, '');
+      try {
+        const response = await fetch('/.netlify/functions/unassign-campaign-leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            emails: [...selectedLeadEmails],
+            campaignId,
+            removeFromAll
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not remove leads from campaign');
+
+        selectedLeadEmails.clear();
+        localStorage.setItem(SELECTION_KEY, '[]');
+        await loadLeadHub();
+        await loadSavedCampaigns();
+        setStatus(
+          result.removed
+            ? `Removed ${result.removed} campaign assignment${result.removed === 1 ? '' : 's'} from ${result.leadCount || 0} lead${(result.leadCount || 0) === 1 ? '' : 's'}.`
+            : 'No campaign assignments found for the selected leads.',
+          result.removed ? 'success' : 'error'
+        );
+      } catch (error) {
+        setStatus(error.message || 'Could not remove leads from campaign.', 'error');
+      }
     }
 
     function renderLaunchQueue() {
@@ -1339,7 +1963,7 @@
         await loadSavedCampaigns();
         updateAssignTargetLabel();
         updateSelectionCount();
-        setStatus(`Campaign saved with ${result.savedDraftCount || 0} draft variants. Next: assign the leads you selected in Step 2 to this campaign.`, 'success');
+        setStatus(`Campaign saved with ${result.savedDraftCount || 0} draft variants. Next: assign Step 2 leads here, or add more from Leads CRM.`, 'success');
       } catch (error) {
         setStatus(error.message || 'Could not save campaign.', 'error');
       }
@@ -1438,6 +2062,7 @@
       documentList.textContent = 'No reference documents added.';
       renderDrafts({});
       saveCampaignDraftsLocally();
+      updateAssignTargetLabel();
       updateWorkflowProgress();
       setStatus('New campaign ready. Add a brief, reference material, and generate copy.', 'success');
     }
@@ -1514,11 +2139,29 @@
       const file = event.target.files && event.target.files[0];
       if (!file) return;
 
-      const text = await file.text();
-      const leads = parseCsv(text);
-      renderRows(leads);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-      setStatus(`${leads.length} leads loaded and ready to save.`, 'success');
+      try {
+        const text = await file.text();
+        const parsed = parseCsv(text);
+        if (!parsed.headers.length || !parsed.rows.length) {
+          clearCsvMappingPanel();
+          setStatus('That CSV has no usable header or data rows.', 'error');
+          return;
+        }
+        pendingCsv = parsed;
+        renderCsvMappingPanel();
+      } catch (error) {
+        clearCsvMappingPanel();
+        setStatus(error.message || 'Could not read that CSV.', 'error');
+      }
+    });
+    csvMappingFields?.addEventListener('change', (event) => {
+      if (!event.target.matches('select[data-schema-field]')) return;
+      renderCsvMappingPreview();
+    });
+    applyCsvMappingBtn?.addEventListener('click', () => importMappedCsvLeads());
+    cancelCsvMappingBtn?.addEventListener('click', () => {
+      clearCsvMappingPanel();
+      setStatus('CSV import cancelled.', '');
     });
 
     campaignDocumentsInput.addEventListener('change', readCampaignDocuments);
@@ -1540,8 +2183,16 @@
       updateSelectionCount();
     });
     leadTableBody.addEventListener('click', (event) => {
-      const button = event.target.closest('.edit-lead-btn');
-      if (button) editLead(button.dataset.leadEmail);
+      const editButton = event.target.closest('.edit-lead-btn');
+      if (editButton) {
+        editLead(editButton.dataset.leadEmail);
+        return;
+      }
+
+      const deleteButton = event.target.closest('.delete-one-lead-btn');
+      if (deleteButton) {
+        withButtonBusy(deleteButton, () => deleteOneLead(deleteButton.dataset.leadEmail), 'Deleting...');
+      }
     });
     selectAllLeadsCheckbox.addEventListener('change', () => {
       getFilteredSortedLeads()
@@ -1565,6 +2216,22 @@
       selectedLeadEmails.clear();
       renderRows(currentLeads);
     });
+    filterUnassignedBtn?.addEventListener('click', () => {
+      if (!leadAssignmentFilterInput) return;
+      leadAssignmentFilterInput.value = 'unassigned';
+      leadAssignmentFilter = 'unassigned';
+      leadPage = 1;
+      renderRows(currentLeads);
+      setStatus('Showing unassigned leads only. Select the ones for this campaign.', 'success');
+    });
+    crmAssignRoundTripBtn?.addEventListener('click', (event) => {
+      if (currentCampaignId) return;
+      event.preventDefault();
+      setStatus('Save this campaign in Step 3 first. Then CRM can assign existing leads back to it.', 'error');
+      document.getElementById('campaigns-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    unassignLeadsBtn?.addEventListener('click', () => withButtonBusy(unassignLeadsBtn, unassignSelectedLeads, 'Removing...'));
+    deleteLeadsBtn?.addEventListener('click', () => withButtonBusy(deleteLeadsBtn, deleteSelectedLeads, 'Deleting...'));
     assignLeadsBtn.addEventListener('click', () => withButtonBusy(assignLeadsBtn, assignSelectedLeads, 'Assigning leads...'));
     campaignNameInput?.addEventListener('input', updateAssignTargetLabel);
     leadHubFilterInput.addEventListener('input', () => {
@@ -1579,6 +2246,12 @@
     });
     leadAssignmentFilterInput.addEventListener('change', () => {
       leadAssignmentFilter = leadAssignmentFilterInput.value;
+      if (unassignCampaignSelect && leadAssignmentFilter.startsWith('campaign:')) {
+        const campaignId = leadAssignmentFilter.slice(9);
+        if ([...unassignCampaignSelect.options].some((option) => option.value === campaignId)) {
+          unassignCampaignSelect.value = campaignId;
+        }
+      }
       leadPage = 1;
       renderRows(currentLeads);
     });

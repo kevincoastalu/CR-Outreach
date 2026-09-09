@@ -44,6 +44,15 @@ window.CyRiskShared = {
       .filter(Boolean);
   },
 
+  leadFirmKeywords(lead) {
+    const direct = String(lead?.firm_keywords || '').trim();
+    if (direct) return direct;
+    const sourceQuery = String(lead?.source_query || '').trim();
+    if (!sourceQuery) return '';
+    if (sourceQuery.includes('|')) return sourceQuery.split('|').slice(1).join('|').trim();
+    return sourceQuery;
+  },
+
   topbar(active) {
     const links = [
       { href: 'index.html', id: 'workflow', label: 'Campaign workflow' },
