@@ -601,6 +601,7 @@
           </div>
           <div class="action-row">
             <button id="searchApolloBtn" class="primary-btn" type="button">Search Apollo</button>
+            <button id="enrichApolloBtn" class="secondary-btn" type="button">Enrich selected</button>
             <button id="importApolloBtn" class="secondary-btn" type="button">Import selected</button>
           </div>
         </div>
@@ -743,6 +744,7 @@
     const apolloKeywordsInput = document.getElementById('apolloKeywords');
     const apolloResultCountInput = document.getElementById('apolloResultCount');
     const searchApolloBtn = document.getElementById('searchApolloBtn');
+    const enrichApolloBtn = document.getElementById('enrichApolloBtn');
     const importApolloBtn = document.getElementById('importApolloBtn');
     const apolloStatus = document.getElementById('apolloStatus');
     const apolloResults = document.getElementById('apolloResults');
@@ -822,6 +824,39 @@
         setApolloStatus(`Imported ${result.imported} prospects for review${result.skipped ? `; skipped ${result.skipped}` : ''}.`, 'success');
       } catch (error) {
         setApolloStatus(error.message || 'Apollo import failed.', 'error');
+      }
+    }
+
+    function selectedApolloLeads() {
+      return Array.from(apolloResults.querySelectorAll('input[data-apollo-index]:checked'))
+        .map((input) => ({ index: Number(input.dataset.apolloIndex), lead: apolloSearchResults[Number(input.dataset.apolloIndex)] }))
+        .filter((item) => item.lead);
+    }
+
+    async function enrichSelectedApolloLeads() {
+      const selected = selectedApolloLeads();
+      if (!selected.length) {
+        setApolloStatus('Select at least one Apollo prospect first.', 'error');
+        return;
+      }
+
+      setApolloStatus('Enriching selected prospects. Apollo may charge credits for returned email data...', '');
+      try {
+        const response = await fetch('/.netlify/functions/enrich-apollo-leads', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: selected.map((item) => item.lead) })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Apollo enrichment failed');
+
+        (result.enriched || []).forEach((lead) => {
+          const match = apolloSearchResults.findIndex((item) => item.apollo_contact_id === lead.apollo_contact_id);
+          if (match >= 0) apolloSearchResults[match] = lead;
+        });
+        renderApolloResults();
+        setApolloStatus(`Enriched ${result.enrichedCount} prospects${result.failedCount ? `; ${result.failedCount} did not return email data` : ''}.`, result.enrichedCount ? 'success' : 'error');
+      } catch (error) {
+        setApolloStatus(error.message || 'Apollo enrichment failed.', 'error');
       }
     }
 
@@ -1219,6 +1254,7 @@
     generateDraftsBtn.addEventListener('click', generateCampaignDrafts);
     manualLeadForm.addEventListener('submit', addManualLead);
     searchApolloBtn.addEventListener('click', searchApollo);
+    enrichApolloBtn.addEventListener('click', enrichSelectedApolloLeads);
     importApolloBtn.addEventListener('click', importSelectedApolloLeads);
     draftGrid.addEventListener('input', updateDraftValue);
     saveCampaignBtn.addEventListener('click', saveCampaignToSupabase);
