@@ -931,11 +931,12 @@
               <th>City</th>
               <th>State</th>
               <th>Campaigns</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="leadTableBody">
             <tr>
-              <td colspan="9" class="muted">No lead CSV uploaded yet.</td>
+              <td colspan="10" class="muted">No lead CSV uploaded yet.</td>
             </tr>
           </tbody>
         </table>
@@ -993,6 +994,7 @@
     const controlIcp = document.getElementById('controlIcp');
     const controlCta = document.getElementById('controlCta');
     const controlPersonalization = document.getElementById('controlPersonalization');
+    const addLeadBtn = document.getElementById('addLeadBtn');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
     const DRAFTS_KEY = 'cyrisk-outreach-drafts';
@@ -1006,6 +1008,7 @@
     let apolloLastSearchKey = '';
     let selectedLeadEmails = new Set();
     let leadHubFilter = '';
+    let editingLeadEmail = '';
 
     function setApolloStatus(message, type = '') {
       apolloStatus.textContent = message || '';
@@ -1257,7 +1260,7 @@
       });
 
       if (!leads.length) {
-        leadTableBody.innerHTML = '<tr><td colspan="9" class="muted">No lead CSV uploaded yet.</td></tr>';
+        leadTableBody.innerHTML = '<tr><td colspan="10" class="muted">No lead CSV uploaded yet.</td></tr>';
         leadCountEl.textContent = '0';
         readyCountEl.textContent = '0';
         updateSelectionCount();
@@ -1279,12 +1282,13 @@
           <td>${lead.city || '-'}</td>
           <td>${lead.state || '-'}</td>
           <td>${(lead.campaign_leads || []).map((membership) => escapeHtml(membership.campaigns?.name || 'Campaign')).join(', ') || '<span class="muted">Unassigned</span>'}</td>
+          <td><button class="secondary-btn edit-lead-btn" type="button" data-lead-email="${escapeHtml(lead.email || '')}">Edit</button></td>
         </tr>
       `).join('');
 
       if (visibleLeads.length > 15) {
         const extraRow = document.createElement('tr');
-        extraRow.innerHTML = '<td colspan="9" class="muted">+ ' + (visibleLeads.length - 15) + ' more leads match</td>';
+        extraRow.innerHTML = '<td colspan="10" class="muted">+ ' + (visibleLeads.length - 15) + ' more leads match</td>';
         leadTableBody.appendChild(extraRow);
       }
       updateSelectionCount();
@@ -1361,6 +1365,39 @@
       const lead = Object.fromEntries(formData.entries());
       const normalizedEmail = lead.email.trim().toLowerCase();
 
+      if (editingLeadEmail) {
+        const existing = currentLeads.find((item) => (item.email || '').trim().toLowerCase() === editingLeadEmail);
+        if (!existing) return;
+        lead.email = normalizedEmail;
+        lead.id = existing.id;
+        lead.campaign_leads = existing.campaign_leads;
+        const replaceLead = () => {
+          currentLeads = currentLeads.map((item) => (item.email || '').trim().toLowerCase() === editingLeadEmail ? lead : item);
+          renderRows(currentLeads);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLeads));
+          editingLeadEmail = '';
+          addLeadBtn.textContent = 'Add lead';
+          manualLeadForm.reset();
+          setStatus('Lead updated successfully.', 'success');
+        };
+
+        if (!existing.id) {
+          replaceLead();
+          return;
+        }
+
+        fetch('/.netlify/functions/update-lead', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originalEmail: editingLeadEmail, lead })
+        }).then(async (response) => {
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Could not update lead');
+          Object.assign(lead, result.lead || {});
+          replaceLead();
+        }).catch((error) => setStatus(error.message || 'Could not update lead.', 'error'));
+        return;
+      }
+
       if (currentLeads.some((item) => (item.email || '').trim().toLowerCase() === normalizedEmail)) {
         setStatus('A lead with that email is already loaded.', 'error');
         return;
@@ -1371,6 +1408,23 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLeads));
       manualLeadForm.reset();
       setStatus(`${lead.first_name} ${lead.last_name || ''}`.trim() + ' added and ready to save.', 'success');
+    }
+
+    function editLead(email) {
+      const lead = currentLeads.find((item) => (item.email || '').trim().toLowerCase() === email);
+      if (!lead) return;
+      editingLeadEmail = email;
+      manualLeadForm.elements.first_name.value = lead.first_name || '';
+      manualLeadForm.elements.last_name.value = lead.last_name || '';
+      manualLeadForm.elements.email.value = lead.email || '';
+      manualLeadForm.elements.title.value = lead.title || '';
+      manualLeadForm.elements.firm_name.value = lead.firm_name || '';
+      manualLeadForm.elements.website.value = lead.website || '';
+      manualLeadForm.elements.city.value = lead.city || '';
+      manualLeadForm.elements.state.value = lead.state || '';
+      addLeadBtn.textContent = 'Update lead';
+      document.querySelector('#leads-hub').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setStatus('Editing lead. Update the fields and submit when ready.', '');
     }
 
     async function saveLeadsToSupabase() {
@@ -1702,6 +1756,10 @@
       if (checkbox.checked) selectedLeadEmails.add(email);
       else selectedLeadEmails.delete(email);
       updateSelectionCount();
+    });
+    leadTableBody.addEventListener('click', (event) => {
+      const button = event.target.closest('.edit-lead-btn');
+      if (button) editLead(button.dataset.leadEmail);
     });
     selectAllLeadsCheckbox.addEventListener('change', () => {
       currentLeads.filter((lead) => {
