@@ -16,14 +16,14 @@ export const handler = async (event) => {
       .from('campaigns')
       .select('id, name, objective, target_segment, status, cta, personalization_mode, solution_context, source_documents, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)')
       .order('created_at', { ascending: false })
-      .limit(12);
+      .limit(50);
 
     if (error && /column .* does not exist|schema cache/i.test(error.message)) {
       ({ data, error } = await supabase
         .from('campaigns')
         .select('id, name, objective, target_segment, status, created_at, email_drafts(*), send_jobs(*), campaign_leads(lead_id, status)')
         .order('created_at', { ascending: false })
-        .limit(12));
+        .limit(50));
     }
 
     if (error) {

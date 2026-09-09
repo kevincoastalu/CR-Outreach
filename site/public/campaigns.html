@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campaigns | CyRisk Outreach</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <div id="topbarMount"></div>
+
+    <section class="card panel">
+      <div class="hub-heading">
+        <h2>Campaigns</h2>
+        <span class="info-tip" tabindex="0" role="img" aria-label="About campaigns" data-tip="Browse every saved campaign here. Open one in the workflow to edit copy, assign leads, or prepare launch.">i</span>
+      </div>
+      <p class="page-intro">Your campaign library. Open a campaign to continue writing, assigning leads, or launching—without cluttering this list with the builder.</p>
+      <div class="hub-actions">
+        <a class="primary-btn" href="index.html#campaigns-hub" style="display:inline-block; text-decoration:none;">Create new campaign</a>
+        <a class="secondary-btn" href="leads.html" style="display:inline-block; text-decoration:none;">Open leads CRM</a>
+      </div>
+      <div id="statusMessage" class="status-message" aria-live="polite"></div>
+      <div id="campaignList" class="campaign-list"></div>
+    </section>
+  </div>
+
+  <script src="shared.js"></script>
+  <script>
+    const { escapeHtml, withButtonBusy, setStatus, topbar } = window.CyRiskShared;
+    document.getElementById('topbarMount').innerHTML = topbar('campaigns');
+
+    const campaignList = document.getElementById('campaignList');
+    const statusMessage = document.getElementById('statusMessage');
+    let savedCampaigns = [];
+
+    function renderCampaignList(items) {
+      savedCampaigns = items || [];
+      if (!items.length) {
+        campaignList.innerHTML = '<div class="mini-campaign"><h3>No campaigns yet</h3><p>Create your first campaign in the Campaign workflow.</p></div>';
+        return;
+      }
+
+      campaignList.innerHTML = items.map((campaign) => {
+        const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
+        const preview = drafts.length
+          ? drafts.map((draft) => `<p><strong>${escapeHtml(draft.subject_line || 'Draft')}</strong><br>${escapeHtml((draft.body_text || '').slice(0, 90))}${(draft.body_text || '').length > 90 ? '...' : ''}</p>`).join('')
+          : '<p>No drafted copy stored yet.</p>';
+        const latestJob = Array.isArray(campaign.send_jobs) && campaign.send_jobs.length ? campaign.send_jobs[0] : null;
+        const assignedLeadCount = Array.isArray(campaign.campaign_leads) ? campaign.campaign_leads.length : 0;
+
+        return `
+          <article class="mini-campaign">
+            <h3>${escapeHtml(campaign.name || 'Untitled campaign')}</h3>
+            <p>${escapeHtml(campaign.objective || 'No objective set.')}</p>
+            <p><strong>Audience:</strong> ${escapeHtml(campaign.target_segment || 'N/A')}</p>
+            <p><strong>Assigned leads:</strong> ${assignedLeadCount}</p>
+            <div class="tag">${escapeHtml(campaign.status || 'draft')}</div>
+            ${preview}
+            <p><strong>Launch:</strong> ${latestJob ? `${escapeHtml(latestJob.platform)} / ${escapeHtml(latestJob.status)}` : 'Not prepared'}</p>
+            <div class="mini-campaign-actions">
+              <a class="secondary-btn" href="index.html?campaign=${encodeURIComponent(campaign.id || '')}#campaigns-hub" style="display:inline-block; text-decoration:none;">Open in workflow</a>
+              <button class="secondary-btn danger-btn delete-campaign-btn" type="button" data-campaign-id="${escapeHtml(campaign.id || '')}" data-campaign-name="${escapeHtml(campaign.name || 'Untitled campaign')}">Delete</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    async function deleteCampaign(campaignId, campaignName) {
+      if (!campaignId) {
+        setStatus(statusMessage, 'That campaign cannot be deleted yet because it has no saved ID.', 'error');
+        return;
+      }
+      const confirmed = window.confirm(`Delete "${campaignName || 'this campaign'}"? Leads stay in Leads CRM, but this campaign’s copy and launch jobs will be removed.`);
+      if (!confirmed) return;
+
+      setStatus(statusMessage, 'Deleting campaign...', '');
+      const response = await fetch('/.netlify/functions/delete-campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not delete campaign');
+      await loadCampaigns();
+      setStatus(statusMessage, `Deleted campaign${result.name ? `: ${result.name}` : ''}.`, 'success');
+    }
+
+    async function loadCampaigns() {
+      try {
+        const response = await fetch('/.netlify/functions/list-campaigns');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not load campaigns');
+        renderCampaignList(Array.isArray(result.campaigns) ? result.campaigns : []);
+      } catch (error) {
+        setStatus(statusMessage, error.message || 'Could not load campaigns.', 'error');
+        renderCampaignList([]);
+      }
+    }
+
+    campaignList.addEventListener('click', (event) => {
+      const deleteButton = event.target.closest('.delete-campaign-btn');
+      if (deleteButton) {
+        withButtonBusy(deleteButton, () => deleteCampaign(deleteButton.dataset.campaignId, deleteButton.dataset.campaignName), 'Deleting...');
+      }
+    });
+
+    loadCampaigns();
+  </script>
+</body>
+</html>

@@ -17,14 +17,12 @@ export const handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     const campaignId = String(body.campaignId || '').trim();
     const platform = String(body.platform || '').trim().toLowerCase();
-    const senderMailbox = String(body.senderMailbox || '').trim();
     const personalizationMode = String(body.personalizationMode || 'Email only').trim();
     const leads = Array.isArray(body.leads) ? body.leads : [];
     const drafts = body.drafts && typeof body.drafts === 'object' ? body.drafts : {};
 
     if (!campaignId) return { statusCode: 400, body: JSON.stringify({ error: 'Save the campaign before preparing launch' }) };
     if (!['apollo', 'instantly'].includes(platform)) return { statusCode: 400, body: JSON.stringify({ error: 'Choose Apollo or Instantly' }) };
-    if (!senderMailbox) return { statusCode: 400, body: JSON.stringify({ error: 'Sending mailbox is required' }) };
     if (!leads.length) return { statusCode: 400, body: JSON.stringify({ error: 'At least one lead is required' }) };
 
     const missingEmails = leads.filter((lead) => !String(lead.email || '').trim());
@@ -50,7 +48,6 @@ export const handler = async (event) => {
     const payload = {
       campaign_id: campaignId,
       platform,
-      sender_mailbox: senderMailbox,
       contacts: leads.map((lead) => ({
         first_name: lead.first_name || '',
         last_name: lead.last_name || '',
@@ -60,7 +57,8 @@ export const handler = async (event) => {
       })),
       steps,
       personalization_mode: personalizationMode,
-      activation_required: true
+      activation_required: true,
+      note: 'Sending mailbox is configured in the email provider (Apollo or Instantly).'
     };
 
     const { error: campaignError } = await supabase

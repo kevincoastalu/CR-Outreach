@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Launches | CyRisk Outreach</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <div id="topbarMount"></div>
+
+    <section class="card panel">
+      <div class="hub-heading">
+        <h2>Launches</h2>
+        <span class="info-tip" tabindex="0" role="img" aria-label="About launches" data-tip="Prepared launch jobs appear here. Activate the final send in Apollo or Instantly—the mailbox lives in your email provider.">i</span>
+      </div>
+      <p class="page-intro">Every prepared launch job across campaigns. These are paused until you activate them in Apollo or Instantly.</p>
+      <div class="hub-actions">
+        <a class="primary-btn" href="index.html#prepare-launch" style="display:inline-block; text-decoration:none;">Prepare a launch</a>
+        <a class="secondary-btn" href="campaigns.html" style="display:inline-block; text-decoration:none;">Browse campaigns</a>
+      </div>
+      <div id="statusMessage" class="status-message" aria-live="polite"></div>
+      <div id="launchList" class="launch-list"><p class="muted">Loading launch jobs...</p></div>
+    </section>
+  </div>
+
+  <script src="shared.js"></script>
+  <script>
+    const { escapeHtml, setStatus, topbar } = window.CyRiskShared;
+    document.getElementById('topbarMount').innerHTML = topbar('launches');
+
+    const launchList = document.getElementById('launchList');
+    const statusMessage = document.getElementById('statusMessage');
+
+    function renderLaunchQueue(campaigns) {
+      const jobs = (campaigns || []).flatMap((campaign) => (campaign.send_jobs || []).map((job) => ({
+        ...job,
+        campaignName: campaign.name,
+        campaignId: campaign.id
+      })));
+
+      if (!jobs.length) {
+        launchList.innerHTML = '<p class="muted">No launch jobs prepared yet. Finish a campaign in the workflow, then prepare launch.</p>';
+        return;
+      }
+
+      launchList.innerHTML = jobs.map((job) => `
+        <div class="launch-row">
+          <div>
+            <strong>${escapeHtml(job.campaignName || 'Untitled campaign')}</strong>
+            <span>${escapeHtml(job.id || '')}</span>
+          </div>
+          <div>
+            <strong>Provider</strong>
+            <span>${escapeHtml(job.platform || '-')}</span>
+          </div>
+          <div>
+            <strong>Status</strong>
+            <span>${escapeHtml(job.status || '-')}</span>
+          </div>
+          <div>
+            <strong>Next step</strong>
+            <span>Activate in provider</span>
+            ${job.campaignId ? `<div style="margin-top:8px;"><a class="secondary-btn" href="index.html?campaign=${encodeURIComponent(job.campaignId)}#prepare-launch" style="display:inline-block; text-decoration:none; padding:7px 10px; font-size:12px;">Open campaign</a></div>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadLaunches() {
+      try {
+        const response = await fetch('/.netlify/functions/list-campaigns');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not load launches');
+        renderLaunchQueue(Array.isArray(result.campaigns) ? result.campaigns : []);
+      } catch (error) {
+        setStatus(statusMessage, error.message || 'Could not load launches.', 'error');
+        launchList.innerHTML = '<p class="muted">Could not load launch jobs.</p>';
+      }
+    }
+
+    loadLaunches();
+  </script>
+</body>
+</html>

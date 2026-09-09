@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leads | CyRisk Outreach</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <div id="topbarMount"></div>
+
+    <section class="card panel" style="margin-bottom:24px;">
+      <div class="hub-heading">
+        <h2>Leads</h2>
+        <span class="info-tip" tabindex="0" role="img" aria-label="About leads" data-tip="This is your lead CRM. Search, filter, edit, and organize prospects here. Use Campaign workflow when you are ready to assign leads to a specific outreach.">i</span>
+      </div>
+      <p class="page-intro">Review and organize every prospect in one place. Select people here, then open Campaign workflow to assign them to a campaign.</p>
+      <div class="hub-actions">
+        <a class="primary-btn" href="index.html#get-leads" style="display:inline-block; text-decoration:none;">Add leads in workflow</a>
+        <a class="secondary-btn" href="index.html#campaigns-hub" style="display:inline-block; text-decoration:none;">Open campaign workflow</a>
+      </div>
+      <div id="statusMessage" class="status-message" aria-live="polite"></div>
+
+      <div class="lead-toolbar">
+        <div class="field">
+          <label for="leadHubFilter">Search</label>
+          <input id="leadHubFilter" type="search" placeholder="Name, email, title, firm, city, or state" />
+        </div>
+        <div class="field">
+          <label for="leadStatusFilter">Status</label>
+          <select id="leadStatusFilter">
+            <option value="">All statuses</option>
+            <option value="new">New</option>
+            <option value="needs_review">Needs review</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="leadAssignmentFilter">Assignment</label>
+          <select id="leadAssignmentFilter">
+            <option value="">All leads</option>
+            <option value="unassigned">Unassigned only</option>
+            <option value="assigned">Assigned to any campaign</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="leadSortBy">Sort by</label>
+          <select id="leadSortBy">
+            <option value="name-asc">Name A–Z</option>
+            <option value="name-desc">Name Z–A</option>
+            <option value="firm-asc">Firm A–Z</option>
+            <option value="firm-desc">Firm Z–A</option>
+            <option value="status-asc">Status A–Z</option>
+            <option value="email-asc">Email A–Z</option>
+            <option value="state-asc">State A–Z</option>
+            <option value="newest">Newest first</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="lead-selection-bar">
+        <button id="selectAllLeadsBtn" class="secondary-btn" type="button">Select all matching</button>
+        <button id="clearLeadSelectionBtn" class="secondary-btn" type="button">Clear selection</button>
+        <span id="selectionCount" class="selection-count">0 leads selected</span>
+        <span id="reviewHint" class="selection-count">Select leads, then continue in Campaign workflow.</span>
+      </div>
+      <div class="lead-meta-row">
+        <span id="leadFilterSummary">0 leads shown</span>
+        <div class="lead-pager">
+          <button id="leadPrevPageBtn" class="secondary-btn" type="button">Previous</button>
+          <span id="leadPageLabel">Page 1</span>
+          <button id="leadNextPageBtn" class="secondary-btn" type="button">Next</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><input id="selectAllLeadsCheckbox" type="checkbox" aria-label="Select all leads on this page"></th>
+              <th>First name</th>
+              <th>Last name</th>
+              <th>Email</th>
+              <th>Title</th>
+              <th>Firm</th>
+              <th>City</th>
+              <th>State</th>
+              <th>Status</th>
+              <th>Source</th>
+              <th>Campaigns</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="leadTableBody">
+            <tr><td colspan="12" class="muted">Loading leads...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card panel">
+      <h2>Edit lead</h2>
+      <p class="section-intro">Update a prospect’s details, then save. Changes sync to your lead list.</p>
+      <form id="manualLeadForm" class="manual-lead-form" style="border-top:none; margin-top:0; padding-top:0;">
+        <div class="lead-form-grid">
+          <input id="manualFirstName" name="first_name" type="text" placeholder="First name" required>
+          <input id="manualLastName" name="last_name" type="text" placeholder="Last name">
+          <input id="manualEmail" name="email" type="email" placeholder="Email address" required>
+          <input id="manualTitle" name="title" type="text" placeholder="Title">
+          <input id="manualFirmName" name="firm_name" type="text" placeholder="Firm name" required>
+          <input id="manualWebsite" name="website" type="url" placeholder="Website">
+          <input id="manualCity" name="city" type="text" placeholder="City">
+          <input id="manualState" name="state" type="text" placeholder="State">
+        </div>
+        <div class="action-row">
+          <button id="addLeadBtn" class="primary-btn" type="submit">Save lead</button>
+          <button id="cancelEditBtn" class="secondary-btn" type="button">Cancel edit</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script src="shared.js"></script>
+  <script>
+    const { escapeHtml, withButtonBusy, setStatus, formatLeadStatus, leadEmailKey, leadCampaignNames, topbar } = window.CyRiskShared;
+    document.getElementById('topbarMount').innerHTML = topbar('leads');
+
+    const STORAGE_KEY = 'cyrisk-outreach-leads';
+    const SELECTION_KEY = 'cyrisk-selected-lead-emails';
+    const LEAD_PAGE_SIZE = 50;
+
+    const leadTableBody = document.getElementById('leadTableBody');
+    const statusMessage = document.getElementById('statusMessage');
+    const leadHubFilterInput = document.getElementById('leadHubFilter');
+    const leadStatusFilterInput = document.getElementById('leadStatusFilter');
+    const leadAssignmentFilterInput = document.getElementById('leadAssignmentFilter');
+    const leadSortByInput = document.getElementById('leadSortBy');
+    const leadFilterSummary = document.getElementById('leadFilterSummary');
+    const leadPrevPageBtn = document.getElementById('leadPrevPageBtn');
+    const leadNextPageBtn = document.getElementById('leadNextPageBtn');
+    const leadPageLabel = document.getElementById('leadPageLabel');
+    const selectAllLeadsBtn = document.getElementById('selectAllLeadsBtn');
+    const clearLeadSelectionBtn = document.getElementById('clearLeadSelectionBtn');
+    const selectAllLeadsCheckbox = document.getElementById('selectAllLeadsCheckbox');
+    const selectionCount = document.getElementById('selectionCount');
+    const reviewHint = document.getElementById('reviewHint');
+    const manualLeadForm = document.getElementById('manualLeadForm');
+    const addLeadBtn = document.getElementById('addLeadBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+    let currentLeads = [];
+    let savedCampaigns = [];
+    let selectedLeadEmails = new Set(JSON.parse(localStorage.getItem(SELECTION_KEY) || '[]'));
+    let leadHubFilter = '';
+    let leadStatusFilter = '';
+    let leadAssignmentFilter = '';
+    let leadSortBy = 'name-asc';
+    let leadPage = 1;
+    let editingLeadEmail = '';
+
+    function persistSelection() {
+      localStorage.setItem(SELECTION_KEY, JSON.stringify([...selectedLeadEmails]));
+    }
+
+    function getFilteredSortedLeads() {
+      const filtered = currentLeads.filter((lead) => {
+        const status = String(lead.status || 'new').toLowerCase();
+        const memberships = lead.campaign_leads || [];
+        const assigned = memberships.length > 0;
+        if (leadStatusFilter && status !== leadStatusFilter) return false;
+        if (leadAssignmentFilter === 'unassigned' && assigned) return false;
+        if (leadAssignmentFilter === 'assigned' && !assigned) return false;
+        if (leadAssignmentFilter.startsWith('campaign:') && !memberships.some((membership) => membership.campaign_id === leadAssignmentFilter.slice(9))) return false;
+        if (!leadHubFilter) return true;
+        const haystack = [lead.first_name, lead.last_name, lead.email, lead.title, lead.firm_name, lead.city, lead.state, lead.status, formatLeadStatus(lead.status), lead.source, ...leadCampaignNames(lead)].join(' ').toLowerCase();
+        return haystack.includes(leadHubFilter);
+      });
+
+      return [...filtered].sort((a, b) => {
+        const nameA = `${a.first_name || ''} ${a.last_name || ''}`.trim().toLowerCase();
+        const nameB = `${b.first_name || ''} ${b.last_name || ''}`.trim().toLowerCase();
+        const firmA = (a.firm_name || '').toLowerCase();
+        const firmB = (b.firm_name || '').toLowerCase();
+        const statusA = (a.status || '').toLowerCase();
+        const statusB = (b.status || '').toLowerCase();
+        const emailA = (a.email || '').toLowerCase();
+        const emailB = (b.email || '').toLowerCase();
+        const stateA = (a.state || '').toLowerCase();
+        const stateB = (b.state || '').toLowerCase();
+        const createdA = Date.parse(a.created_at || a.source_imported_at || 0) || 0;
+        const createdB = Date.parse(b.created_at || b.source_imported_at || 0) || 0;
+        switch (leadSortBy) {
+          case 'name-desc': return nameB.localeCompare(nameA);
+          case 'firm-asc': return firmA.localeCompare(firmB) || nameA.localeCompare(nameB);
+          case 'firm-desc': return firmB.localeCompare(firmA) || nameA.localeCompare(nameB);
+          case 'status-asc': return statusA.localeCompare(statusB) || nameA.localeCompare(nameB);
+          case 'email-asc': return emailA.localeCompare(emailB);
+          case 'state-asc': return stateA.localeCompare(stateB) || nameA.localeCompare(nameB);
+          case 'newest': return createdB - createdA || nameA.localeCompare(nameB);
+          default: return nameA.localeCompare(nameB);
+        }
+      });
+    }
+
+    function updateSelectionCount() {
+      selectionCount.textContent = `${selectedLeadEmails.size} lead${selectedLeadEmails.size === 1 ? '' : 's'} selected`;
+      const pageEmails = getFilteredSortedLeads().slice((leadPage - 1) * LEAD_PAGE_SIZE, leadPage * LEAD_PAGE_SIZE).map(leadEmailKey).filter(Boolean);
+      selectAllLeadsCheckbox.checked = pageEmails.length > 0 && pageEmails.every((email) => selectedLeadEmails.has(email));
+      if (!currentLeads.length) reviewHint.textContent = 'No leads yet. Add them from Campaign workflow.';
+      else if (!selectedLeadEmails.size) reviewHint.textContent = 'Select leads to use in a campaign, or edit one below.';
+      else reviewHint.textContent = `${selectedLeadEmails.size} selected. Open Campaign workflow to assign them.`;
+      persistSelection();
+    }
+
+    function populateAssignmentFilter() {
+      const previous = leadAssignmentFilterInput.value;
+      leadAssignmentFilterInput.innerHTML = [
+        '<option value="">All leads</option>',
+        '<option value="unassigned">Unassigned only</option>',
+        '<option value="assigned">Assigned to any campaign</option>',
+        ...savedCampaigns.map((campaign) => `<option value="campaign:${campaign.id}">In: ${escapeHtml(campaign.name || 'Untitled campaign')}</option>`)
+      ].join('');
+      leadAssignmentFilterInput.value = [...leadAssignmentFilterInput.options].some((option) => option.value === previous) ? previous : '';
+      leadAssignmentFilter = leadAssignmentFilterInput.value;
+    }
+
+    function renderRows(leads) {
+      currentLeads = leads;
+      selectedLeadEmails = new Set([...selectedLeadEmails].filter((email) => leads.some((lead) => leadEmailKey(lead) === email)));
+      const visibleLeads = getFilteredSortedLeads();
+      const totalPages = Math.max(1, Math.ceil(visibleLeads.length / LEAD_PAGE_SIZE));
+      if (leadPage > totalPages) leadPage = totalPages;
+      if (leadPage < 1) leadPage = 1;
+      const pageStart = (leadPage - 1) * LEAD_PAGE_SIZE;
+      const pageLeads = visibleLeads.slice(pageStart, pageStart + LEAD_PAGE_SIZE);
+
+      if (!leads.length) {
+        leadTableBody.innerHTML = '<tr><td colspan="12" class="muted">No leads yet. Add them from Campaign workflow.</td></tr>';
+        leadFilterSummary.textContent = '0 leads shown';
+        leadPageLabel.textContent = 'Page 1';
+        leadPrevPageBtn.disabled = true;
+        leadNextPageBtn.disabled = true;
+        updateSelectionCount();
+        return;
+      }
+
+      leadFilterSummary.textContent = visibleLeads.length === leads.length
+        ? `Showing ${pageLeads.length ? pageStart + 1 : 0}–${pageStart + pageLeads.length} of ${leads.length} leads`
+        : `Showing ${pageLeads.length ? pageStart + 1 : 0}–${pageStart + pageLeads.length} of ${visibleLeads.length} matching (${leads.length} total)`;
+      leadPageLabel.textContent = `Page ${leadPage} of ${totalPages}`;
+      leadPrevPageBtn.disabled = leadPage <= 1;
+      leadNextPageBtn.disabled = leadPage >= totalPages;
+
+      if (!visibleLeads.length) {
+        leadTableBody.innerHTML = '<tr><td colspan="12" class="muted">No leads match the current filters.</td></tr>';
+        updateSelectionCount();
+        return;
+      }
+
+      leadTableBody.innerHTML = pageLeads.map((lead) => {
+        const statusValue = String(lead.status || 'new').toLowerCase();
+        return `
+          <tr>
+            <td><input class="lead-select" type="checkbox" data-lead-email="${escapeHtml(lead.email || '')}" ${selectedLeadEmails.has(leadEmailKey(lead)) ? 'checked' : ''}></td>
+            <td>${escapeHtml(lead.first_name || '-')}</td>
+            <td>${escapeHtml(lead.last_name || '-')}</td>
+            <td>${escapeHtml(lead.email || '-')}</td>
+            <td>${escapeHtml(lead.title || '-')}</td>
+            <td>${escapeHtml(lead.firm_name || '-')}</td>
+            <td>${escapeHtml(lead.city || '-')}</td>
+            <td>${escapeHtml(lead.state || '-')}</td>
+            <td><span class="status-chip ${escapeHtml(statusValue)}">${escapeHtml(formatLeadStatus(lead.status))}</span></td>
+            <td>${escapeHtml(lead.source || '-')}</td>
+            <td>${leadCampaignNames(lead).map((name) => escapeHtml(name)).join(', ') || '<span class="muted">Unassigned</span>'}</td>
+            <td><button class="secondary-btn edit-lead-btn" type="button" data-lead-email="${escapeHtml(lead.email || '')}">Edit</button></td>
+          </tr>
+        `;
+      }).join('');
+      updateSelectionCount();
+    }
+
+    function editLead(email) {
+      const lead = currentLeads.find((item) => leadEmailKey(item) === String(email || '').trim().toLowerCase());
+      if (!lead) return;
+      editingLeadEmail = leadEmailKey(lead);
+      manualLeadForm.first_name.value = lead.first_name || '';
+      manualLeadForm.last_name.value = lead.last_name || '';
+      manualLeadForm.email.value = lead.email || '';
+      manualLeadForm.title.value = lead.title || '';
+      manualLeadForm.firm_name.value = lead.firm_name || '';
+      manualLeadForm.website.value = lead.website || '';
+      manualLeadForm.city.value = lead.city || '';
+      manualLeadForm.state.value = lead.state || '';
+      addLeadBtn.textContent = 'Save lead';
+      setStatus(statusMessage, `Editing ${lead.email}.`, '');
+      manualLeadForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function cancelEdit() {
+      editingLeadEmail = '';
+      manualLeadForm.reset();
+      addLeadBtn.textContent = 'Save lead';
+      setStatus(statusMessage, 'Edit cancelled.', '');
+    }
+
+    async function saveLead(event) {
+      event.preventDefault();
+      if (!editingLeadEmail) {
+        setStatus(statusMessage, 'Choose a lead to edit first.', 'error');
+        return;
+      }
+      const formData = new FormData(manualLeadForm);
+      const lead = Object.fromEntries(formData.entries());
+      const existing = currentLeads.find((item) => leadEmailKey(item) === editingLeadEmail);
+      if (!existing) return;
+      lead.email = String(lead.email || '').trim().toLowerCase();
+      lead.id = existing.id;
+      lead.campaign_leads = existing.campaign_leads;
+
+      const replaceLead = () => {
+        currentLeads = currentLeads.map((item) => leadEmailKey(item) === editingLeadEmail ? { ...existing, ...lead } : item);
+        renderRows(currentLeads);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLeads));
+        cancelEdit();
+        setStatus(statusMessage, 'Lead updated.', 'success');
+      };
+
+      if (!existing.id) {
+        replaceLead();
+        return;
+      }
+
+      const response = await fetch('/.netlify/functions/update-lead', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ originalEmail: editingLeadEmail, lead })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not update lead');
+      Object.assign(lead, result.lead || {});
+      replaceLead();
+    }
+
+    async function loadData() {
+      try {
+        const [leadsRes, campaignsRes] = await Promise.all([
+          fetch('/.netlify/functions/list-leads'),
+          fetch('/.netlify/functions/list-campaigns')
+        ]);
+        const leadsResult = await leadsRes.json();
+        const campaignsResult = await campaignsRes.json();
+        if (!leadsRes.ok) throw new Error(leadsResult.error || 'Could not load leads');
+        savedCampaigns = Array.isArray(campaignsResult.campaigns) ? campaignsResult.campaigns : [];
+        populateAssignmentFilter();
+        const leads = Array.isArray(leadsResult.leads) ? leadsResult.leads : [];
+        if (leads.length) {
+          renderRows(leads);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+        } else {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          renderRows(saved ? JSON.parse(saved) : []);
+        }
+      } catch (error) {
+        setStatus(statusMessage, error.message || 'Could not load leads.', 'error');
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) renderRows(JSON.parse(saved));
+      }
+    }
+
+    leadTableBody.addEventListener('change', (event) => {
+      const checkbox = event.target.closest('.lead-select');
+      if (!checkbox) return;
+      const email = (checkbox.dataset.leadEmail || '').trim().toLowerCase();
+      if (!email) return;
+      if (checkbox.checked) selectedLeadEmails.add(email);
+      else selectedLeadEmails.delete(email);
+      updateSelectionCount();
+    });
+    leadTableBody.addEventListener('click', (event) => {
+      const button = event.target.closest('.edit-lead-btn');
+      if (button) editLead(button.dataset.leadEmail);
+    });
+    selectAllLeadsCheckbox.addEventListener('change', () => {
+      getFilteredSortedLeads().slice((leadPage - 1) * LEAD_PAGE_SIZE, leadPage * LEAD_PAGE_SIZE).forEach((lead) => {
+        const email = leadEmailKey(lead);
+        if (!email) return;
+        if (selectAllLeadsCheckbox.checked) selectedLeadEmails.add(email);
+        else selectedLeadEmails.delete(email);
+      });
+      renderRows(currentLeads);
+    });
+    selectAllLeadsBtn.addEventListener('click', () => {
+      getFilteredSortedLeads().forEach((lead) => {
+        const email = leadEmailKey(lead);
+        if (email) selectedLeadEmails.add(email);
+      });
+      renderRows(currentLeads);
+    });
+    clearLeadSelectionBtn.addEventListener('click', () => {
+      selectedLeadEmails.clear();
+      renderRows(currentLeads);
+    });
+    leadHubFilterInput.addEventListener('input', () => { leadHubFilter = leadHubFilterInput.value.trim().toLowerCase(); leadPage = 1; renderRows(currentLeads); });
+    leadStatusFilterInput.addEventListener('change', () => { leadStatusFilter = leadStatusFilterInput.value; leadPage = 1; renderRows(currentLeads); });
+    leadAssignmentFilterInput.addEventListener('change', () => { leadAssignmentFilter = leadAssignmentFilterInput.value; leadPage = 1; renderRows(currentLeads); });
+    leadSortByInput.addEventListener('change', () => { leadSortBy = leadSortByInput.value || 'name-asc'; leadPage = 1; renderRows(currentLeads); });
+    leadPrevPageBtn.addEventListener('click', () => { if (leadPage <= 1) return; leadPage -= 1; renderRows(currentLeads); });
+    leadNextPageBtn.addEventListener('click', () => { leadPage += 1; renderRows(currentLeads); });
+    manualLeadForm.addEventListener('submit', (event) => withButtonBusy(addLeadBtn, () => saveLead(event), 'Saving lead...'));
+    cancelEditBtn.addEventListener('click', cancelEdit);
+
+    const statusParam = new URLSearchParams(window.location.search).get('status');
+    if (statusParam) {
+      leadStatusFilterInput.value = statusParam;
+      leadStatusFilter = statusParam;
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
