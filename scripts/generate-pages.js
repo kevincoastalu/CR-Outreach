@@ -19,9 +19,12 @@
  *   SENDER_TITLE    Default: CyRisk
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const ROOT = path.join(__dirname, '..');
 const LEADS_CSV = path.join(ROOT, 'leads', 'leads.csv');
 const TEMPLATE_PATH = path.join(ROOT, 'site', 'templates', 'teaser-template.html');
@@ -150,7 +153,8 @@ function main() {
 
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   // Simple root index so the base domain isn't a 404.
-  fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), `<!doctype html>
+  const rootIndex = path.join(PUBLIC_DIR, 'index.html');
+  if (!fs.existsSync(rootIndex)) fs.writeFileSync(rootIndex, `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
