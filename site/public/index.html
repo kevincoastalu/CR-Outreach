@@ -692,6 +692,7 @@
     let currentLeads = [];
     let currentDrafts = {};
     let currentCampaignId = '';
+    let savedCampaigns = [];
 
     function setStatus(message, type = '') {
       statusMessage.textContent = message || '';
@@ -869,6 +870,7 @@
     }
 
     function renderCampaignList(items) {
+      savedCampaigns = items || [];
       if (!items || !items.length) {
         campaignList.innerHTML = '<div class="mini-campaign"><h3>No campaigns yet</h3><p>Save a campaign to create your first draft record.</p></div>';
         return;
@@ -877,6 +879,7 @@
       campaignList.innerHTML = items.map((campaign) => {
         const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
         const preview = drafts.length ? drafts.map((draft) => `<p><strong>${draft.subject_line || 'Draft'}</strong><br>${(draft.body_text || '').slice(0, 90)}${(draft.body_text || '').length > 90 ? '...' : ''}</p>`).join('') : '<p>No drafted copy stored yet.</p>';
+        const latestJob = Array.isArray(campaign.send_jobs) && campaign.send_jobs.length ? campaign.send_jobs[0] : null;
 
         return `
           <article class="mini-campaign">
@@ -885,9 +888,49 @@
             <p><strong>Segment:</strong> ${(campaign.target_segment || 'N/A').replace(/</g, '&lt;')}</p>
             <div class="tag">${(campaign.status || 'draft')}</div>
             ${preview}
+            <p><strong>Launch:</strong> ${latestJob ? `${latestJob.platform} / ${latestJob.status}` : 'Not prepared'}</p>
+            <button class="secondary-btn review-campaign-btn" type="button" data-campaign-index="${items.indexOf(campaign)}">Review / relaunch</button>
           </article>
         `;
       }).join('');
+    }
+
+    function reviewCampaign(index) {
+      const campaign = savedCampaigns[index];
+      if (!campaign) return;
+
+      currentCampaignId = campaign.id || '';
+      campaignNameInput.value = campaign.name || '';
+      campaignObjectiveInput.value = campaign.objective || '';
+      campaignSegmentInput.value = campaign.target_segment || campaignSegmentInput.value;
+      campaignStatusInput.value = campaign.status || 'draft';
+
+      const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
+      const restoredDrafts = {};
+      drafts.forEach((draft, draftIndex) => {
+        const number = draftIndex + 1;
+        restoredDrafts[`subject${number}`] = draft.subject_line || '';
+        restoredDrafts[`body${number}`] = draft.body_text || '';
+      });
+      renderDrafts(restoredDrafts);
+
+      const latestJob = Array.isArray(campaign.send_jobs) && campaign.send_jobs.length ? campaign.send_jobs[0] : null;
+      if (latestJob) {
+        launchPlatformInput.value = latestJob.platform || 'apollo';
+        const payload = latestJob.payload || {};
+        senderMailboxInput.value = payload.sender_mailbox || '';
+        const contacts = Array.isArray(payload.contacts) ? payload.contacts.map((contact) => ({
+          ...contact,
+          page_url: contact.page_link || ''
+        })) : [];
+        if (contacts.length) {
+          renderRows(contacts);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
+        }
+      }
+
+      window.scrollTo({ top: document.querySelector('.campaign-builder').offsetTop - 24, behavior: 'smooth' });
+      setStatus(`Loaded ${campaign.name || 'campaign'} for review.`, 'success');
     }
 
     async function saveCampaignToSupabase() {
@@ -1047,6 +1090,10 @@
     draftGrid.addEventListener('input', updateDraftValue);
     saveCampaignBtn.addEventListener('click', saveCampaignToSupabase);
     prepareLaunchBtn.addEventListener('click', prepareLaunch);
+    campaignList.addEventListener('click', (event) => {
+      const button = event.target.closest('.review-campaign-btn');
+      if (button) reviewCampaign(Number(button.dataset.campaignIndex));
+    });
 
     const savedDrafts = localStorage.getItem(DRAFTS_KEY);
     if (savedDrafts) {
