@@ -43,6 +43,29 @@
       box-shadow: var(--shadow);
     }
 
+    .hub-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .hub-nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 9px;
+      border-radius: 8px;
+    }
+
+    .hub-nav a:hover,
+    .hub-nav a:focus-visible {
+      color: var(--accent);
+      background: var(--accent-soft);
+      outline: none;
+    }
+
     .brand {
       display: flex;
       align-items: center;
@@ -437,6 +460,35 @@
       margin-right: auto;
     }
 
+    .hub-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .hub-heading h2 { margin: 0; }
+
+    .launch-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .launch-row {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr 0.7fr 0.8fr;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel-soft);
+      font-size: 13px;
+    }
+
+    .launch-row strong { display: block; margin-bottom: 4px; }
+    .launch-row span { color: var(--muted); }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -582,6 +634,12 @@
         <span class="brand-mark"></span>
         CyRisk Outreach
       </div>
+      <nav class="hub-nav" aria-label="Workspace hubs">
+        <a href="#leads-hub">Leads</a>
+        <a href="#campaigns-hub">Campaigns</a>
+        <a href="#launch-queue">Launch queue</a>
+        <a href="#apollo-discovery">Apollo discovery</a>
+      </nav>
       <div class="status-pill">Ops Dashboard</div>
     </header>
 
@@ -651,7 +709,7 @@
       </div>
     </section>
 
-    <section class="card panel" style="margin-bottom:24px;">
+    <section id="apollo-discovery" class="card panel" style="margin-bottom:24px;">
       <h2>Find leads in Apollo <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo lead discovery" data-tip="Search Apollo for prospects first. Results stay here until you select and import them.">i</span></h2>
       <p class="muted">Search Apollo for relevant prospects, review the results, then import selected contacts as leads needing review. Nothing is enrolled or sent from this search.</p>
       <div class="campaign-builder">
@@ -707,8 +765,8 @@
       </article>
     </section>
 
-    <section class="card panel" style="margin-bottom:24px;">
-      <h2>Campaign builder</h2>
+    <section id="campaigns-hub" class="card panel" style="margin-bottom:24px;">
+      <div class="hub-heading"><h2>Campaigns Hub</h2><span class="info-tip" tabindex="0" role="img" aria-label="About the campaigns hub" data-tip="Review every campaign, its audience, copy, assigned leads, and launch state from one place.">i</span></div>
       <div class="campaign-builder">
         <div>
           <div class="field">
@@ -766,8 +824,17 @@
       </div>
     </section>
 
-    <section class="card panel" style="margin-bottom:24px;">
-      <h2>Lead preview</h2>
+    <section id="launch-queue" class="card panel" style="margin-bottom:24px;">
+      <div class="hub-heading"><h2>Launch Queue</h2><span class="info-tip" tabindex="0" role="img" aria-label="About the launch queue" data-tip="Prepared Apollo or Instantly jobs appear here before provider activation. This is your final operational checkpoint.">i</span></div>
+      <div id="launchList" class="launch-list"><p class="muted">No launch jobs prepared yet.</p></div>
+    </section>
+
+    <section id="leads-hub" class="card panel" style="margin-bottom:24px;">
+      <div class="hub-heading"><h2>Leads Hub</h2><span class="info-tip" tabindex="0" role="img" aria-label="About the leads hub" data-tip="Review all saved leads, their source, status, and the campaigns they belong to. Local imported leads appear here after saving.">i</span></div>
+      <div class="field" style="max-width:360px;">
+        <label for="leadHubFilter">Filter leads</label>
+        <input id="leadHubFilter" type="search" placeholder="Search name, email, firm, or status" />
+      </div>
       <div class="lead-selection-bar">
         <button id="selectAllLeadsBtn" class="secondary-btn" type="button">Select all visible</button>
         <button id="clearLeadSelectionBtn" class="secondary-btn" type="button">Clear selection</button>
@@ -789,11 +856,12 @@
               <th>Firm</th>
               <th>City</th>
               <th>State</th>
+              <th>Campaigns</th>
             </tr>
           </thead>
           <tbody id="leadTableBody">
             <tr>
-              <td colspan="8" class="muted">No lead CSV uploaded yet.</td>
+              <td colspan="9" class="muted">No lead CSV uploaded yet.</td>
             </tr>
           </tbody>
         </table>
@@ -838,6 +906,8 @@
     const assignCampaignSelect = document.getElementById('assignCampaignSelect');
     const assignLeadsBtn = document.getElementById('assignLeadsBtn');
     const selectionCount = document.getElementById('selectionCount');
+    const leadHubFilterInput = document.getElementById('leadHubFilter');
+    const launchList = document.getElementById('launchList');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
     const DRAFTS_KEY = 'cyrisk-outreach-drafts';
@@ -847,6 +917,7 @@
     let savedCampaigns = [];
     let apolloSearchResults = [];
     let selectedLeadEmails = new Set();
+    let leadHubFilter = '';
 
     function setApolloStatus(message, type = '') {
       apolloStatus.textContent = message || '';
@@ -1016,9 +1087,14 @@
     function renderRows(leads) {
       currentLeads = leads;
       selectedLeadEmails = new Set([...selectedLeadEmails].filter((email) => leads.some((lead) => (lead.email || '').trim().toLowerCase() === email)));
+      const visibleLeads = leads.filter((lead) => {
+        if (!leadHubFilter) return true;
+        const haystack = [lead.first_name, lead.last_name, lead.email, lead.firm_name, lead.status].join(' ').toLowerCase();
+        return haystack.includes(leadHubFilter);
+      });
 
       if (!leads.length) {
-        leadTableBody.innerHTML = '<tr><td colspan="8" class="muted">No lead CSV uploaded yet.</td></tr>';
+        leadTableBody.innerHTML = '<tr><td colspan="9" class="muted">No lead CSV uploaded yet.</td></tr>';
         leadCountEl.textContent = '0';
         readyCountEl.textContent = '0';
         updateSelectionCount();
@@ -1029,9 +1105,9 @@
       leadCountEl.textContent = String(leads.length);
       readyCountEl.textContent = String(valid.length);
 
-      leadTableBody.innerHTML = leads.slice(0, 15).map((lead, index) => `
+      leadTableBody.innerHTML = visibleLeads.slice(0, 15).map((lead) => `
         <tr>
-          <td><input class="lead-select" type="checkbox" data-lead-index="${index}" aria-label="Select ${escapeHtml(lead.email || 'lead')}" ${selectedLeadEmails.has((lead.email || '').trim().toLowerCase()) ? 'checked' : ''}></td>
+          <td><input class="lead-select" type="checkbox" data-lead-email="${escapeHtml(lead.email || '')}" aria-label="Select ${escapeHtml(lead.email || 'lead')}" ${selectedLeadEmails.has((lead.email || '').trim().toLowerCase()) ? 'checked' : ''}></td>
           <td>${lead.first_name || '-'}</td>
           <td>${lead.last_name || '-'}</td>
           <td>${lead.email || '-'}</td>
@@ -1039,12 +1115,13 @@
           <td>${lead.firm_name || '-'}</td>
           <td>${lead.city || '-'}</td>
           <td>${lead.state || '-'}</td>
+          <td>${(lead.campaign_leads || []).map((membership) => escapeHtml(membership.campaigns?.name || 'Campaign')).join(', ') || '<span class="muted">Unassigned</span>'}</td>
         </tr>
       `).join('');
 
-      if (leads.length > 15) {
+      if (visibleLeads.length > 15) {
         const extraRow = document.createElement('tr');
-        extraRow.innerHTML = '<td colspan="8" class="muted">+ ' + (leads.length - 15) + ' more leads loaded</td>';
+        extraRow.innerHTML = '<td colspan="9" class="muted">+ ' + (visibleLeads.length - 15) + ' more leads match</td>';
         leadTableBody.appendChild(extraRow);
       }
       updateSelectionCount();
@@ -1052,13 +1129,33 @@
 
     function updateSelectionCount() {
       selectionCount.textContent = `${selectedLeadEmails.size} lead${selectedLeadEmails.size === 1 ? '' : 's'} selected`;
-      const visibleLeads = currentLeads.slice(0, 15);
+      const visibleLeads = currentLeads.filter((lead) => {
+        if (!leadHubFilter) return true;
+        return [lead.first_name, lead.last_name, lead.email, lead.firm_name, lead.status].join(' ').toLowerCase().includes(leadHubFilter);
+      }).slice(0, 15);
       selectAllLeadsCheckbox.checked = visibleLeads.length > 0 && visibleLeads.every((lead) => selectedLeadEmails.has((lead.email || '').trim().toLowerCase()));
     }
 
     function populateCampaignSelect() {
       assignCampaignSelect.innerHTML = '<option value="">Choose campaign...</option>' + savedCampaigns.map((campaign) => `<option value="${campaign.id}">${escapeHtml(campaign.name || 'Untitled campaign')}</option>`).join('');
       if (currentCampaignId) assignCampaignSelect.value = currentCampaignId;
+    }
+
+    function renderLaunchQueue() {
+      const jobs = savedCampaigns.flatMap((campaign) => (campaign.send_jobs || []).map((job) => ({ ...job, campaignName: campaign.name })));
+      if (!jobs.length) {
+        launchList.innerHTML = '<p class="muted">No launch jobs prepared yet.</p>';
+        return;
+      }
+
+      launchList.innerHTML = jobs.map((job) => `
+        <div class="launch-row">
+          <div><strong>${escapeHtml(job.campaignName || 'Untitled campaign')}</strong><span>${escapeHtml(job.id || '')}</span></div>
+          <div><strong>Provider</strong><span>${escapeHtml(job.platform || '-')}</span></div>
+          <div><strong>Status</strong><span>${escapeHtml(job.status || '-')}</span></div>
+          <div><strong>Action</strong><span>Activate in provider</span></div>
+        </div>
+      `).join('');
     }
 
     async function assignSelectedLeads() {
@@ -1175,6 +1272,7 @@
     function renderCampaignList(items) {
       savedCampaigns = items || [];
       populateCampaignSelect();
+      renderLaunchQueue();
       if (!items || !items.length) {
         campaignList.innerHTML = '<div class="mini-campaign"><h3>No campaigns yet</h3><p>Save a campaign to create your first draft record.</p></div>';
         return;
@@ -1330,6 +1428,20 @@
       }
     }
 
+    async function loadLeadHub() {
+      try {
+        const response = await fetch('/.netlify/functions/list-leads');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not load leads');
+        if (Array.isArray(result.leads) && result.leads.length) {
+          renderRows(result.leads);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(result.leads));
+        }
+      } catch (error) {
+        console.warn('Could not load Leads Hub data', error);
+      }
+    }
+
     async function generateCampaignDrafts() {
       if (!currentLeads.length) {
         setStatus('Upload a CSV before generating drafts.', 'error');
@@ -1394,15 +1506,17 @@
     leadTableBody.addEventListener('change', (event) => {
       const checkbox = event.target.closest('.lead-select');
       if (!checkbox) return;
-      const lead = currentLeads[Number(checkbox.dataset.leadIndex)];
-      const email = (lead?.email || '').trim().toLowerCase();
+      const email = (checkbox.dataset.leadEmail || '').trim().toLowerCase();
       if (!email) return;
       if (checkbox.checked) selectedLeadEmails.add(email);
       else selectedLeadEmails.delete(email);
       updateSelectionCount();
     });
     selectAllLeadsCheckbox.addEventListener('change', () => {
-      currentLeads.slice(0, 15).forEach((lead) => {
+      currentLeads.filter((lead) => {
+        if (!leadHubFilter) return true;
+        return [lead.first_name, lead.last_name, lead.email, lead.firm_name, lead.status].join(' ').toLowerCase().includes(leadHubFilter);
+      }).slice(0, 15).forEach((lead) => {
         const email = (lead.email || '').trim().toLowerCase();
         if (!email) return;
         if (selectAllLeadsCheckbox.checked) selectedLeadEmails.add(email);
@@ -1422,6 +1536,10 @@
       renderRows(currentLeads);
     });
     assignLeadsBtn.addEventListener('click', assignSelectedLeads);
+    leadHubFilterInput.addEventListener('input', () => {
+      leadHubFilter = leadHubFilterInput.value.trim().toLowerCase();
+      renderRows(currentLeads);
+    });
     searchApolloBtn.addEventListener('click', searchApollo);
     enrichApolloBtn.addEventListener('click', enrichSelectedApolloLeads);
     importApolloBtn.addEventListener('click', importSelectedApolloLeads);
@@ -1448,6 +1566,7 @@
 
     loadFromStorage();
     loadSavedCampaigns();
+    loadLeadHub();
   </script>
 </body>
 </html>
