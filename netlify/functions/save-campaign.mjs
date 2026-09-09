@@ -1,5 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
+function normalizeApolloPlaceholders(value) {
+  return String(value || '')
+    .replace(/\[Name\]/gi, '{{first_name}}')
+    .replace(/\[Your Name\]/gi, '{{sender_name}}')
+    .replace(/\[Firm Name\]/gi, '{{firm_name}}')
+    .replace(/\[Page Link\]/gi, '{{page_link}}');
+}
+
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -44,8 +52,8 @@ export const handler = async (event) => {
       { key: 'subject3', bodyKey: 'body3', label: 'Variant 3' }
     ]
       .map(({ key, bodyKey }) => {
-        const subjectLine = drafts[key];
-        const bodyText = drafts[bodyKey];
+        const subjectLine = normalizeApolloPlaceholders(drafts[key]);
+        const bodyText = normalizeApolloPlaceholders(drafts[bodyKey]);
         if (!subjectLine || !bodyText) return null;
 
         return {
