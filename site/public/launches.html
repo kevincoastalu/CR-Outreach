@@ -17,8 +17,8 @@
       </div>
       <p class="page-intro">Prepared launch jobs in one list. Expand a row to push to Apollo (inactive) or open the campaign.</p>
       <div class="hub-actions">
-        <button class="primary-btn" type="button" data-nav-href="index.html#prepare-launch">Prepare a launch</button>
-        <button class="secondary-btn" type="button" data-nav-href="campaigns.html">Browse Campaigns</button>
+        <a class="primary-btn" href="index.html#prepare-launch">Prepare a launch</a>
+        <a class="secondary-btn" href="campaigns.html">Browse Campaigns</a>
       </div>
       <div id="statusMessage" class="status-message" aria-live="polite"></div>
       <div id="launchList" class="stack-list"><p class="muted">Loading launch jobs...</p></div>
@@ -88,8 +88,8 @@
               }</p>
               <div class="mini-campaign-actions">
                 ${apolloActions}
-                ${job.campaignId ? `<button class="secondary-btn" type="button" data-nav-href="index.html?campaign=${encodeURIComponent(job.campaignId)}#prepare-launch">Open campaign</button>` : ''}
-                <button class="secondary-btn" type="button" data-nav-href="campaigns.html">Browse Campaigns</button>
+                ${job.campaignId ? `<a class="secondary-btn" href="index.html?campaign=${encodeURIComponent(job.campaignId)}#prepare-launch">Open campaign</a>` : ''}
+                <a class="secondary-btn" href="campaigns.html">Browse Campaigns</a>
               </div>
             </div>
           </article>
@@ -145,12 +145,8 @@
     }
 
     launchList.addEventListener('click', (event) => {
-      const navBtn = event.target.closest('[data-nav-href]');
-      if (navBtn) {
-        event.preventDefault();
-        window.CyRiskShared.navigateTo(navBtn.getAttribute('data-nav-href'));
-        return;
-      }
+      if (event.target.closest('a[href]')) return;
+
       const pushBtn = event.target.closest('.push-apollo-btn');
       if (pushBtn) {
         event.preventDefault();

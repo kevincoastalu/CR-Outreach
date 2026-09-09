@@ -690,8 +690,12 @@
       line-height: 1.5;
     }
 
-    .stack-detail .mini-campaign-actions {
-      margin-top: 12px;
+    .stack-detail .mini-campaign-actions a.secondary-btn,
+    .stack-detail .mini-campaign-actions a.primary-btn {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     @media (max-width: 700px) {

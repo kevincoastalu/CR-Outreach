@@ -2463,7 +2463,22 @@
     });
 
     async function bootstrapWorkflow() {
-      const campaignId = new URLSearchParams(window.location.search).get('campaign');
+      const params = new URLSearchParams(window.location.search);
+      const campaignId = params.get('campaign');
+      const startNew = params.get('new') === '1';
+
+      if (startNew) {
+        resetCampaignBuilder();
+        loadFromStorage();
+        renderApolloQueue();
+        await loadSavedCampaigns({ autoOpenFromUrl: false });
+        await loadLeadHub();
+        updateWorkflowProgress();
+        updateExistingLeadsCtas();
+        setStatus('New campaign ready. Add a brief, generate copy, then save.', 'success');
+        document.getElementById('campaigns-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
 
       if (!campaignId) {
         const savedDrafts = localStorage.getItem(DRAFTS_KEY);

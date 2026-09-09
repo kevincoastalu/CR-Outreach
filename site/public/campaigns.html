@@ -17,8 +17,8 @@
       </div>
       <p class="page-intro">Your campaign library in a compact list. Click a campaign to expand details—only one stays open at a time.</p>
       <div class="hub-actions">
-        <button class="primary-btn" type="button" data-nav-href="index.html#campaigns-hub">Create new campaign</button>
-        <button class="secondary-btn" type="button" data-nav-href="leads.html">Browse Leads CRM</button>
+        <a class="primary-btn" href="index.html?new=1#campaigns-hub">Create new campaign</a>
+        <a class="secondary-btn" href="leads.html">Browse Leads CRM</a>
       </div>
       <div id="statusMessage" class="status-message" aria-live="polite"></div>
       <div id="campaignList" class="stack-list"></div>
@@ -72,7 +72,7 @@
               <p><strong>Launch:</strong> ${latestJob ? `${escapeHtml(latestJob.platform)} / ${escapeHtml(latestJob.status)}` : 'Not prepared'}</p>
               ${preview}
               <div class="mini-campaign-actions">
-                <button class="secondary-btn" type="button" data-nav-href="index.html?campaign=${encodeURIComponent(campaign.id || '')}#campaigns-hub">Open in workflow</button>
+                <a class="secondary-btn" href="index.html?campaign=${encodeURIComponent(campaign.id || '')}#campaigns-hub">Open in workflow</a>
                 <button class="secondary-btn danger-btn delete-campaign-btn" type="button" data-campaign-id="${escapeHtml(campaign.id || '')}" data-campaign-name="${escapeHtml(campaign.name || 'Untitled campaign')}">Delete</button>
               </div>
             </div>
@@ -115,19 +115,16 @@
     }
 
     campaignList.addEventListener('click', (event) => {
-      const navBtn = event.target.closest('[data-nav-href]');
-      if (navBtn) {
-        event.preventDefault();
-        window.CyRiskShared.navigateTo(navBtn.getAttribute('data-nav-href'));
-        return;
-      }
-
       const deleteButton = event.target.closest('.delete-campaign-btn');
       if (deleteButton) {
+        event.preventDefault();
         event.stopPropagation();
         withButtonBusy(deleteButton, () => deleteCampaign(deleteButton.dataset.campaignId, deleteButton.dataset.campaignName), 'Deleting...');
         return;
       }
+
+      // Real <a href> links navigate natively; don't treat them as row toggles.
+      if (event.target.closest('a[href]')) return;
 
       const toggle = event.target.closest('[data-toggle-id]');
       if (!toggle) return;
