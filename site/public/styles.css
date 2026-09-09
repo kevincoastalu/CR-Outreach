@@ -1096,6 +1096,17 @@
       margin-bottom: 12px;
     }
 
+    .lead-selection-bar .primary-btn,
+    .lead-selection-bar .secondary-btn,
+    .assign-panel .primary-btn,
+    .assign-panel .secondary-btn {
+      flex: 0 0 auto;
+    }
+
+    .assign-panel .action-row {
+      align-items: stretch;
+    }
+
     .lead-selection-bar select {
       min-width: 220px;
       width: auto;

@@ -319,14 +319,17 @@
 
       <div class="assign-panel" style="margin-top:18px; padding-top:16px; border-top:1px solid var(--border);">
         <h3 style="margin:0 0 8px; font-size:16px;">Assign Step 2 leads to this campaign</h3>
-        <p class="muted" style="margin:0 0 12px;">Attaches the leads checked in Step 2 to the campaign above. Want to pull in more existing contacts with CRM filters? Use the button below—you’ll return here when finished.</p>
+        <p class="muted" style="margin:0 0 12px;">Attaches the leads checked in Step 2 to the campaign above. Need more existing contacts? Open Leads CRM—you’ll come back to this campaign when finished.</p>
         <p id="assignTargetLabel" class="selection-count" style="margin:0 0 12px;">Campaign target: save this campaign first.</p>
-        <div class="lead-selection-bar">
+        <div class="action-row" style="margin-top:0;">
           <button id="assignLeadsBtn" class="primary-btn" type="button">Assign selected leads to this campaign</button>
           <button id="crmAssignRoundTripBtn" class="secondary-btn" type="button">Add more from Leads CRM</button>
+        </div>
+        <div class="lead-selection-bar" style="margin-top:10px; margin-bottom:0;">
           <span id="assignSelectionCount" class="selection-count">0 leads selected</span>
           <span id="assignmentHint" class="selection-count">Save this campaign before assigning leads.</span>
         </div>
+        <div id="assignPanelStatus" class="status-message" aria-live="polite"></div>
       </div>
       <div class="hub-actions" style="margin-top:14px;">
         <button id="openCampaignsLibraryBtn" class="secondary-btn" type="button">Open Campaigns library</button>
@@ -443,6 +446,7 @@
     const deleteLeadsBtn = document.getElementById('deleteLeadsBtn');
     const assignLeadsBtn = document.getElementById('assignLeadsBtn');
     const assignTargetLabel = document.getElementById('assignTargetLabel');
+    const assignPanelStatus = document.getElementById('assignPanelStatus');
     const crmAssignRoundTripBtn = document.getElementById('crmAssignRoundTripBtn');
     const openCrmForCampaignBtn = document.getElementById('openCrmForCampaignBtn');
     const openCampaignsLibraryBtn = document.getElementById('openCampaignsLibraryBtn');
@@ -1428,10 +1432,33 @@
       return saved?.name || 'this campaign';
     }
 
+    function setAssignPanelStatus(message, type = '') {
+      if (!assignPanelStatus) return;
+      assignPanelStatus.textContent = message || '';
+      assignPanelStatus.className = 'status-message';
+      if (type) assignPanelStatus.classList.add(type);
+    }
+
     function crmAssignRoundTripHref(campaignId = currentCampaignId) {
       if (!campaignId) return 'leads.html';
       const returnTo = `index.html?campaign=${encodeURIComponent(campaignId)}#campaigns-hub`;
       return `leads.html?assignTo=${encodeURIComponent(campaignId)}&return=${encodeURIComponent(returnTo)}`;
+    }
+
+    function goToLeadsCrmForCampaign() {
+      const campaignId = currentCampaignId;
+      if (!campaignId) {
+        const message = 'Save this campaign above first. Then Add more from Leads CRM will open the CRM with this campaign selected.';
+        setAssignPanelStatus(message, 'error');
+        if (assignmentHint) assignmentHint.textContent = message;
+        setStatus(message, 'error');
+        document.getElementById('saveCampaignBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const href = crmAssignRoundTripHref(campaignId);
+      setAssignPanelStatus(`Opening Leads CRM for ${currentCampaignName()}...`, 'success');
+      window.location.assign(href);
     }
 
     function updateExistingLeadsCtas() {
@@ -1442,19 +1469,21 @@
       if (openCrmForCampaignBtn) {
         openCrmForCampaignBtn.dataset.navHref = href;
         openCrmForCampaignBtn.textContent = campaignReady
-          ? `Add existing leads in CRM`
+          ? 'Add existing leads in CRM'
           : 'Browse Leads CRM';
       }
 
       if (crmAssignRoundTripBtn) {
         crmAssignRoundTripBtn.dataset.navHref = href;
-        crmAssignRoundTripBtn.classList.toggle('is-disabled', !campaignReady);
-        crmAssignRoundTripBtn.setAttribute('aria-disabled', campaignReady ? 'false' : 'true');
-        if (!campaignReady) {
-          crmAssignRoundTripBtn.title = 'Save this campaign first so CRM can attach leads to it.';
-        } else {
-          crmAssignRoundTripBtn.removeAttribute('title');
-        }
+        crmAssignRoundTripBtn.classList.remove('is-disabled');
+        crmAssignRoundTripBtn.removeAttribute('aria-disabled');
+        crmAssignRoundTripBtn.disabled = false;
+        crmAssignRoundTripBtn.title = campaignReady
+          ? `Open Leads CRM and assign existing leads to ${name}`
+          : 'Opens Leads CRM. Save this campaign first so leads can be attached to it.';
+        crmAssignRoundTripBtn.textContent = campaignReady
+          ? 'Add more from Leads CRM'
+          : 'Add more from Leads CRM';
       }
 
       if (existingLeadsCueMessage) {
@@ -1970,6 +1999,7 @@
         await loadSavedCampaigns();
         updateAssignTargetLabel();
         updateSelectionCount();
+        setAssignPanelStatus('Campaign saved. You can assign Step 2 leads here, or add more from Leads CRM.', 'success');
         setStatus(`Campaign saved with ${result.savedDraftCount || 0} draft variants. Next: assign Step 2 leads here, or add more from Leads CRM.`, 'success');
       } catch (error) {
         setStatus(error.message || 'Could not save campaign.', 'error');
@@ -2232,23 +2262,19 @@
       setStatus('Showing unassigned leads only. Select the ones for this campaign.', 'success');
     });
     openCrmForCampaignBtn?.addEventListener('click', () => {
-      window.location.href = openCrmForCampaignBtn.dataset.navHref || crmAssignRoundTripHref();
-    });
-    openCampaignsLibraryBtn?.addEventListener('click', () => {
-      window.location.href = 'campaigns.html';
-    });
-    openLaunchesLibraryBtn?.addEventListener('click', () => {
-      window.location.href = 'launches.html';
-    });
-    crmAssignRoundTripBtn?.addEventListener('click', (event) => {
-      if (!currentCampaignId) {
-        event.preventDefault();
-        setStatus('Save this campaign in Step 3 first. Then CRM can assign existing leads back to it.', 'error');
-        document.getElementById('campaigns-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (currentCampaignId) {
+        window.location.assign(crmAssignRoundTripHref());
         return;
       }
-      window.location.href = crmAssignRoundTripBtn.dataset.navHref || crmAssignRoundTripHref();
+      window.location.assign('leads.html');
     });
+    openCampaignsLibraryBtn?.addEventListener('click', () => {
+      window.location.assign('campaigns.html');
+    });
+    openLaunchesLibraryBtn?.addEventListener('click', () => {
+      window.location.assign('launches.html');
+    });
+    crmAssignRoundTripBtn?.addEventListener('click', () => goToLeadsCrmForCampaign());
     unassignLeadsBtn?.addEventListener('click', () => withButtonBusy(unassignLeadsBtn, unassignSelectedLeads, 'Removing...'));
     deleteLeadsBtn?.addEventListener('click', () => withButtonBusy(deleteLeadsBtn, deleteSelectedLeads, 'Deleting...'));
     assignLeadsBtn.addEventListener('click', () => withButtonBusy(assignLeadsBtn, assignSelectedLeads, 'Assigning leads...'));
@@ -2358,6 +2384,7 @@
       }
 
       updateWorkflowProgress();
+      updateExistingLeadsCtas();
     }
 
     bootstrapWorkflow();
