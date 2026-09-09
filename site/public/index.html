@@ -300,6 +300,14 @@
       margin-top: 16px;
     }
 
+    .apollo-queue {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .apollo-queue h3 { margin: 0 0 8px; font-size: 16px; }
+
     .apollo-result {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -730,15 +738,31 @@
               <option value="25">25</option>
             </select>
           </div>
+          <div class="field">
+            <label for="apolloCompanyLimit">Max per company</label>
+            <select id="apolloCompanyLimit">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+            </select>
+          </div>
           <div class="action-row">
             <button id="searchApolloBtn" class="primary-btn" type="button">Search Apollo</button>
-            <button id="enrichApolloBtn" class="secondary-btn" type="button">Enrich selected <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo enrichment" data-tip="Search results do not include email addresses. Enrichment requests email data for only the prospects you select and may use Apollo credits.">i</span></button>
-            <button id="importApolloBtn" class="secondary-btn" type="button">Import selected <span class="info-tip" tabindex="0" role="img" aria-label="About staged import" data-tip="Import adds selected prospects to this workspace as needs-review leads. It does not enroll or send email.">i</span></button>
+            <button id="holdApolloBtn" class="secondary-btn" type="button">Hold selected</button>
           </div>
         </div>
       </div>
       <div id="apolloStatus" class="status-message" aria-live="polite"></div>
       <div id="apolloResults" class="apollo-results"></div>
+      <div class="apollo-queue">
+        <h3>Held prospects <span id="apolloQueueCount" class="muted">0</span> <span class="info-tip" tabindex="0" role="img" aria-label="About held prospects" data-tip="Hold qualified prospects here while you run more Apollo searches. Enrichment and import happen only when you are ready.">i</span></h3>
+        <div class="action-row">
+          <button id="enrichApolloBtn" class="secondary-btn" type="button">Enrich held</button>
+          <button id="importApolloBtn" class="secondary-btn" type="button">Import held</button>
+          <button id="clearApolloQueueBtn" class="secondary-btn" type="button">Clear held queue</button>
+        </div>
+        <div id="apolloQueue" class="apollo-results"></div>
+      </div>
     </section>
 
     <section class="campaign-grid">
@@ -909,11 +933,16 @@
     const apolloTitlesInput = document.getElementById('apolloTitles');
     const apolloKeywordsInput = document.getElementById('apolloKeywords');
     const apolloResultCountInput = document.getElementById('apolloResultCount');
+    const apolloCompanyLimitInput = document.getElementById('apolloCompanyLimit');
     const searchApolloBtn = document.getElementById('searchApolloBtn');
+    const holdApolloBtn = document.getElementById('holdApolloBtn');
     const enrichApolloBtn = document.getElementById('enrichApolloBtn');
     const importApolloBtn = document.getElementById('importApolloBtn');
     const apolloStatus = document.getElementById('apolloStatus');
     const apolloResults = document.getElementById('apolloResults');
+    const apolloQueue = document.getElementById('apolloQueue');
+    const apolloQueueCount = document.getElementById('apolloQueueCount');
+    const clearApolloQueueBtn = document.getElementById('clearApolloQueueBtn');
     const selectAllLeadsBtn = document.getElementById('selectAllLeadsBtn');
     const clearLeadSelectionBtn = document.getElementById('clearLeadSelectionBtn');
     const selectAllLeadsCheckbox = document.getElementById('selectAllLeadsCheckbox');
@@ -933,6 +962,7 @@
     let currentCampaignId = '';
     let savedCampaigns = [];
     let apolloSearchResults = [];
+    let apolloHeldLeads = JSON.parse(localStorage.getItem('cyrisk-apollo-held-leads') || '[]');
     let selectedLeadEmails = new Set();
     let leadHubFilter = '';
 
@@ -966,6 +996,26 @@
       `).join('');
     }
 
+    function renderApolloQueue() {
+      apolloQueueCount.textContent = String(apolloHeldLeads.length);
+      if (!apolloHeldLeads.length) {
+        apolloQueue.innerHTML = '<p class="muted">No prospects held yet. Search, select, and hold prospects to build the queue.</p>';
+        return;
+      }
+
+      apolloQueue.innerHTML = apolloHeldLeads.map((lead, index) => `
+        <label class="apollo-result">
+          <input type="checkbox" data-held-index="${index}" checked>
+          <span><strong>${escapeHtml(`${lead.first_name} ${lead.last_name}`.trim() || 'Unnamed prospect')}</strong><p>${escapeHtml(lead.title || 'Title unavailable')} at ${escapeHtml(lead.firm_name || 'Firm unavailable')}</p><p>${escapeHtml(lead.email || 'Email not enriched yet')}</p></span>
+        </label>
+      `).join('');
+    }
+
+    function persistApolloQueue() {
+      localStorage.setItem('cyrisk-apollo-held-leads', JSON.stringify(apolloHeldLeads));
+      renderApolloQueue();
+    }
+
     async function searchApollo() {
       setApolloStatus('Searching Apollo...', '');
       try {
@@ -974,25 +1024,46 @@
           body: JSON.stringify({
             titles: apolloTitlesInput.value.split(',').map((value) => value.trim()).filter(Boolean),
             keywords: apolloKeywordsInput.value,
-            perPage: Number(apolloResultCountInput.value)
+            perPage: Number(apolloResultCountInput.value),
+            maxPerCompany: Number(apolloCompanyLimitInput.value)
           })
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Apollo search failed');
         apolloSearchResults = Array.isArray(result.people) ? result.people : [];
         renderApolloResults();
-        setApolloStatus(`${apolloSearchResults.length} Apollo prospects ready for review.`, 'success');
+        setApolloStatus(`${apolloSearchResults.length} Apollo prospects ready for review. Select prospects and click Hold selected to keep them while you search again.`, 'success');
       } catch (error) {
         setApolloStatus(error.message || 'Apollo search failed.', 'error');
       }
     }
 
-    async function importSelectedApolloLeads() {
+    function selectedHeldLeads() {
+      return Array.from(apolloQueue.querySelectorAll('input[data-held-index]:checked'))
+        .map((input) => apolloHeldLeads[Number(input.dataset.heldIndex)])
+        .filter(Boolean);
+    }
+
+    function holdSelectedApolloLeads() {
       const selected = Array.from(apolloResults.querySelectorAll('input[data-apollo-index]:checked'))
         .map((input) => apolloSearchResults[Number(input.dataset.apolloIndex)])
         .filter(Boolean);
       if (!selected.length) {
         setApolloStatus('Select at least one Apollo prospect first.', 'error');
+        return;
+      }
+
+      const existingIds = new Set(apolloHeldLeads.map((lead) => lead.apollo_contact_id));
+      const added = selected.filter((lead) => lead.apollo_contact_id && !existingIds.has(lead.apollo_contact_id));
+      apolloHeldLeads = [...apolloHeldLeads, ...added];
+      persistApolloQueue();
+      setApolloStatus(`Held ${added.length} new prospect${added.length === 1 ? '' : 's'}. You can search Apollo again before enriching.`, 'success');
+    }
+
+    async function importSelectedApolloLeads() {
+      const selected = selectedHeldLeads();
+      if (!selected.length) {
+        setApolloStatus('Hold at least one prospect before importing.', 'error');
         return;
       }
 
@@ -1006,6 +1077,9 @@
         if (!response.ok) throw new Error(result.error || 'Apollo import failed');
         renderRows([...currentLeads, ...(result.leads || [])]);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLeads));
+        const importedIds = new Set(selected.map((lead) => lead.apollo_contact_id));
+        apolloHeldLeads = apolloHeldLeads.filter((lead) => !importedIds.has(lead.apollo_contact_id));
+        persistApolloQueue();
         setApolloStatus(`Imported ${result.imported} prospects for review${result.skipped ? `; skipped ${result.skipped}` : ''}.`, 'success');
       } catch (error) {
         setApolloStatus(error.message || 'Apollo import failed.', 'error');
@@ -1019,7 +1093,7 @@
     }
 
     async function enrichSelectedApolloLeads() {
-      const selected = selectedApolloLeads();
+      const selected = selectedHeldLeads();
       if (!selected.length) {
         setApolloStatus('Select at least one Apollo prospect first.', 'error');
         return;
@@ -1029,16 +1103,16 @@
       try {
         const response = await fetch('/.netlify/functions/enrich-apollo-leads', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leads: selected.map((item) => item.lead) })
+          body: JSON.stringify({ leads: selected })
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Apollo enrichment failed');
 
         (result.enriched || []).forEach((lead) => {
-          const match = apolloSearchResults.findIndex((item) => item.apollo_contact_id === lead.apollo_contact_id);
-          if (match >= 0) apolloSearchResults[match] = lead;
+          const match = apolloHeldLeads.findIndex((item) => item.apollo_contact_id === lead.apollo_contact_id);
+          if (match >= 0) apolloHeldLeads[match] = lead;
         });
-        renderApolloResults();
+        persistApolloQueue();
         setApolloStatus(`Enriched ${result.enrichedCount} prospects${result.failedCount ? `; ${result.failedCount} did not return email data` : ''}.`, result.enrichedCount ? 'success' : 'error');
       } catch (error) {
         setApolloStatus(error.message || 'Apollo enrichment failed.', 'error');
@@ -1580,8 +1654,14 @@
       renderRows(currentLeads);
     });
     searchApolloBtn.addEventListener('click', searchApollo);
+    holdApolloBtn.addEventListener('click', holdSelectedApolloLeads);
     enrichApolloBtn.addEventListener('click', enrichSelectedApolloLeads);
     importApolloBtn.addEventListener('click', importSelectedApolloLeads);
+    clearApolloQueueBtn.addEventListener('click', () => {
+      apolloHeldLeads = [];
+      persistApolloQueue();
+      setApolloStatus('Held prospect queue cleared.', 'success');
+    });
     draftGrid.addEventListener('input', updateDraftValue);
     saveCampaignBtn.addEventListener('click', saveCampaignToSupabase);
     prepareLaunchBtn.addEventListener('click', prepareLaunch);
@@ -1606,6 +1686,7 @@
     }
 
     loadFromStorage();
+    renderApolloQueue();
     loadSavedCampaigns();
     loadLeadHub();
     [campaignSegmentInput, campaignCtaInput, personalizationModeInput].forEach((input) => input.addEventListener('input', updateCampaignControls));

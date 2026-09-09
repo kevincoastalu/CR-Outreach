@@ -28,6 +28,7 @@ export const handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     const page = Math.max(1, Number(body.page) || 1);
     const perPage = Math.min(25, Math.max(1, Number(body.perPage) || 10));
+    const maxPerCompany = Math.min(5, Math.max(1, Number(body.maxPerCompany) || 1));
     const titles = Array.isArray(body.titles) ? body.titles.filter(Boolean).slice(0, 10) : [];
     const keywords = String(body.keywords || '').trim();
 
@@ -48,10 +49,18 @@ export const handler = async (event) => {
     if (!response.ok) return { statusCode: response.status, body: JSON.stringify({ error: result.message || result.error || 'Apollo search failed' }) };
 
     const people = Array.isArray(result.people) ? result.people : (Array.isArray(result.contacts) ? result.contacts : []);
+    const companyCounts = new Map();
+    const limitedPeople = people.filter((person) => {
+      const company = String(person.organization?.name || person.organization_name || 'unknown').trim().toLowerCase();
+      const count = companyCounts.get(company) || 0;
+      if (count >= maxPerCompany) return false;
+      companyCounts.set(company, count + 1);
+      return true;
+    });
     return {
       statusCode: 200,
       body: JSON.stringify({
-        people: people.map(normalizePerson),
+        people: limitedPeople.map(normalizePerson),
         pagination: result.pagination || {},
         query: { titles, keywords, page, perPage }
       })
