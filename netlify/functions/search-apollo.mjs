@@ -1,4 +1,4 @@
-const APOLLO_SEARCH_URL = process.env.APOLLO_SEARCH_URL || 'https://api.apollo.io/v1/mixed_people/search';
+const APOLLO_SEARCH_URL = process.env.APOLLO_SEARCH_URL || 'https://api.apollo.io/api/v1/mixed_people/api_search';
 
 function normalizePerson(person) {
   const organization = person.organization || {};
