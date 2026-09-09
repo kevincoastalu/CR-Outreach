@@ -990,7 +990,7 @@
 
       apolloResults.innerHTML = apolloSearchResults.map((lead, index) => `
         <label class="apollo-result">
-          <input type="checkbox" data-apollo-index="${index}" ${lead.email ? '' : 'disabled'}>
+          <input type="checkbox" data-apollo-index="${index}" ${lead.apollo_contact_id ? '' : 'disabled'}>
           <span><strong>${escapeHtml(`${lead.first_name} ${lead.last_name}`.trim() || 'Unnamed prospect')}</strong><p>${escapeHtml(lead.title || 'Title unavailable')} at ${escapeHtml(lead.firm_name || 'Firm unavailable')}</p><p>${escapeHtml(lead.email || 'No verified email')} ${lead.city || lead.state ? ` · ${escapeHtml([lead.city, lead.state].filter(Boolean).join(', '))}` : ''}</p></span>
         </label>
       `).join('');
