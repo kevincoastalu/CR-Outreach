@@ -219,13 +219,8 @@
             <input id="campaignName" type="text" value="CyRisk Privacy Law Outreach" />
           </div>
           <div class="field">
-            <label for="campaignSegment">Audience</label>
-            <select id="campaignSegment">
-              <option>Privacy litigators</option>
-              <option>Privacy compliance counsel</option>
-              <option>Data security / privacy practice groups</option>
-              <option>All privacy-focused law firms</option>
-            </select>
+            <label for="campaignSegment">Audience <span class="info-tip" tabindex="0" role="img" aria-label="About audience" data-tip="Describe who this outreach is for. The AI uses this to tailor tone, language, and relevance.">i</span></label>
+            <textarea id="campaignSegment" placeholder="Who are you writing to? e.g. privacy litigators at mid-size firms evaluating CIPA/VPPA matters.">Privacy litigators and privacy compliance counsel at law firms evaluating technical evidence for CIPA, VPPA, and CCPA/CPRA claims.</textarea>
           </div>
           <div class="field">
             <label for="campaignObjective">Objective <span class="info-tip" tabindex="0" role="img" aria-label="About campaign objective" data-tip="Tell the AI what this outreach should achieve. This is the primary prompt for subject lines and email bodies.">i</span></label>
@@ -1304,7 +1299,7 @@
       currentCampaignId = '';
       currentDrafts = {};
       campaignNameInput.value = 'New campaign';
-      campaignSegmentInput.selectedIndex = 0;
+      campaignSegmentInput.value = '';
       campaignObjectiveInput.value = '';
       campaignCtaInput.value = '';
       solutionContextInput.value = '';
@@ -1346,7 +1341,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             leads: currentLeads,
-            segment: campaignSegmentInput.value || 'privacy litigators and privacy compliance counsel',
+            segment: campaignSegmentInput.value,
             objective: campaignObjectiveInput.value,
             cta: campaignCtaInput.value,
             personalizationMode: personalizationModeInput.value,

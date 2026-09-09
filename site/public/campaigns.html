@@ -13,15 +13,15 @@
     <section class="card panel">
       <div class="hub-heading">
         <h2>Campaigns</h2>
-        <span class="info-tip" tabindex="0" role="img" aria-label="About campaigns" data-tip="Browse every saved campaign here. Open one in the workflow to edit copy, assign leads, or prepare launch.">i</span>
+        <span class="info-tip" tabindex="0" role="img" aria-label="About campaigns" data-tip="Browse every saved campaign here. Select a row to expand details. Open one in the workflow to edit copy, assign leads, or prepare launch.">i</span>
       </div>
-      <p class="page-intro">Your campaign library. Open a campaign to continue writing, assigning leads, or launching—without cluttering this list with the builder.</p>
+      <p class="page-intro">Your campaign library in a compact list. Click a campaign to expand details—only one stays open at a time.</p>
       <div class="hub-actions">
-        <a class="primary-btn" href="index.html#campaigns-hub" style="display:inline-block; text-decoration:none;">Create new campaign</a>
-        <a class="secondary-btn" href="leads.html" style="display:inline-block; text-decoration:none;">Open leads CRM</a>
+        <a class="primary-btn" href="index.html#campaigns-hub">Create new campaign</a>
+        <a class="secondary-btn" href="leads.html">Open leads CRM</a>
       </div>
       <div id="statusMessage" class="status-message" aria-live="polite"></div>
-      <div id="campaignList" class="campaign-list"></div>
+      <div id="campaignList" class="stack-list"></div>
     </section>
   </div>
 
@@ -33,34 +33,47 @@
     const campaignList = document.getElementById('campaignList');
     const statusMessage = document.getElementById('statusMessage');
     let savedCampaigns = [];
+    let openCampaignId = '';
 
     function renderCampaignList(items) {
       savedCampaigns = items || [];
       if (!items.length) {
-        campaignList.innerHTML = '<div class="mini-campaign"><h3>No campaigns yet</h3><p>Create your first campaign in the Campaign workflow.</p></div>';
+        campaignList.innerHTML = '<div class="stack-item"><div class="stack-summary" style="cursor:default;"><div class="stack-summary-main"><strong>No campaigns yet</strong><span>Create your first campaign in the Campaign workflow.</span></div></div></div>';
         return;
       }
 
       campaignList.innerHTML = items.map((campaign) => {
         const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
         const preview = drafts.length
-          ? drafts.map((draft) => `<p><strong>${escapeHtml(draft.subject_line || 'Draft')}</strong><br>${escapeHtml((draft.body_text || '').slice(0, 90))}${(draft.body_text || '').length > 90 ? '...' : ''}</p>`).join('')
+          ? drafts.map((draft) => `<p><strong>${escapeHtml(draft.subject_line || 'Draft')}</strong><br>${escapeHtml((draft.body_text || '').slice(0, 120))}${(draft.body_text || '').length > 120 ? '...' : ''}</p>`).join('')
           : '<p>No drafted copy stored yet.</p>';
         const latestJob = Array.isArray(campaign.send_jobs) && campaign.send_jobs.length ? campaign.send_jobs[0] : null;
         const assignedLeadCount = Array.isArray(campaign.campaign_leads) ? campaign.campaign_leads.length : 0;
+        const isOpen = openCampaignId && openCampaignId === campaign.id;
 
         return `
-          <article class="mini-campaign">
-            <h3>${escapeHtml(campaign.name || 'Untitled campaign')}</h3>
-            <p>${escapeHtml(campaign.objective || 'No objective set.')}</p>
-            <p><strong>Audience:</strong> ${escapeHtml(campaign.target_segment || 'N/A')}</p>
-            <p><strong>Assigned leads:</strong> ${assignedLeadCount}</p>
-            <div class="tag">${escapeHtml(campaign.status || 'draft')}</div>
-            ${preview}
-            <p><strong>Launch:</strong> ${latestJob ? `${escapeHtml(latestJob.platform)} / ${escapeHtml(latestJob.status)}` : 'Not prepared'}</p>
-            <div class="mini-campaign-actions">
-              <a class="secondary-btn" href="index.html?campaign=${encodeURIComponent(campaign.id || '')}#campaigns-hub" style="display:inline-block; text-decoration:none;">Open in workflow</a>
-              <button class="secondary-btn danger-btn delete-campaign-btn" type="button" data-campaign-id="${escapeHtml(campaign.id || '')}" data-campaign-name="${escapeHtml(campaign.name || 'Untitled campaign')}">Delete</button>
+          <article class="stack-item${isOpen ? ' is-open' : ''}" data-campaign-id="${escapeHtml(campaign.id || '')}">
+            <button class="stack-summary" type="button" data-toggle-id="${escapeHtml(campaign.id || '')}" aria-expanded="${isOpen ? 'true' : 'false'}">
+              <div class="stack-summary-main">
+                <strong>${escapeHtml(campaign.name || 'Untitled campaign')}</strong>
+                <span>${escapeHtml(campaign.target_segment || 'No audience')} · ${assignedLeadCount} lead${assignedLeadCount === 1 ? '' : 's'}</span>
+              </div>
+              <div class="stack-meta">
+                <span class="tag">${escapeHtml(campaign.status || 'draft')}</span>
+                <span>${latestJob ? `${escapeHtml(latestJob.platform)} / ${escapeHtml(latestJob.status)}` : 'Not launched'}</span>
+              </div>
+              <span class="stack-chevron" aria-hidden="true">▼</span>
+            </button>
+            <div class="stack-detail">
+              <p>${escapeHtml(campaign.objective || 'No objective set.')}</p>
+              <p><strong>Audience:</strong> ${escapeHtml(campaign.target_segment || 'N/A')}</p>
+              <p><strong>Assigned leads:</strong> ${assignedLeadCount}</p>
+              <p><strong>Launch:</strong> ${latestJob ? `${escapeHtml(latestJob.platform)} / ${escapeHtml(latestJob.status)}` : 'Not prepared'}</p>
+              ${preview}
+              <div class="mini-campaign-actions">
+                <a class="secondary-btn" href="index.html?campaign=${encodeURIComponent(campaign.id || '')}#campaigns-hub">Open in workflow</a>
+                <button class="secondary-btn danger-btn delete-campaign-btn" type="button" data-campaign-id="${escapeHtml(campaign.id || '')}" data-campaign-name="${escapeHtml(campaign.name || 'Untitled campaign')}">Delete</button>
+              </div>
             </div>
           </article>
         `;
@@ -83,6 +96,7 @@
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not delete campaign');
+      if (openCampaignId === campaignId) openCampaignId = '';
       await loadCampaigns();
       setStatus(statusMessage, `Deleted campaign${result.name ? `: ${result.name}` : ''}.`, 'success');
     }
@@ -102,8 +116,16 @@
     campaignList.addEventListener('click', (event) => {
       const deleteButton = event.target.closest('.delete-campaign-btn');
       if (deleteButton) {
+        event.stopPropagation();
         withButtonBusy(deleteButton, () => deleteCampaign(deleteButton.dataset.campaignId, deleteButton.dataset.campaignName), 'Deleting...');
+        return;
       }
+
+      const toggle = event.target.closest('[data-toggle-id]');
+      if (!toggle) return;
+      const id = toggle.dataset.toggleId || '';
+      openCampaignId = openCampaignId === id ? '' : id;
+      renderCampaignList(savedCampaigns);
     });
 
     loadCampaigns();
