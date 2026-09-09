@@ -55,7 +55,7 @@
       <div class="get-leads-grid">
         <div>
           <h3 style="margin:0 0 10px; font-size:16px;">Find leads in Apollo</h3>
-          <p class="muted" style="margin:0 0 14px;">Search → Keep on each row or Keep selected (sticky + bottom) → add emails if needed → import.</p>
+          <p class="muted" style="margin:0 0 14px;">Search → select all or pick rows → Keep selected → add emails if needed → import.</p>
           <div class="campaign-builder" style="grid-template-columns:1fr;">
             <div>
               <div class="field">
@@ -100,6 +100,12 @@
           </div>
           <div id="apolloResultsPanel" class="apollo-results-panel">
             <div id="apolloStickyActions" class="apollo-sticky-actions" aria-live="polite">
+              <label class="apollo-select-all">
+                <input id="apolloSelectAllCheckbox" type="checkbox" aria-label="Select all prospects in this batch">
+                <span>Select all</span>
+              </label>
+              <button id="apolloSelectAllBtn" class="secondary-btn" type="button">Select all in batch</button>
+              <button id="apolloClearSelectionBtn" class="secondary-btn" type="button">Clear selection</button>
               <span id="apolloSelectedCount" class="selection-count">0 selected</span>
               <span id="apolloStickyMatchCount" class="selection-count"></span>
               <button id="holdApolloTopBtn" class="primary-btn" type="button">Keep selected</button>
@@ -117,6 +123,8 @@
             <div id="apolloResults" class="apollo-results"></div>
             <div id="apolloBottomActions" class="apollo-bottom-actions">
               <div class="action-row">
+                <button id="apolloSelectAllBottomBtn" class="secondary-btn" type="button">Select all in batch</button>
+                <button id="apolloClearSelectionBottomBtn" class="secondary-btn" type="button">Clear selection</button>
                 <button id="holdApolloBottomBtn" class="primary-btn" type="button">Keep selected</button>
                 <button id="apolloSearchNextBottomBtn" class="secondary-btn" type="button">Search next batch</button>
               </div>
@@ -338,8 +346,8 @@
 
     <section id="prepare-launch" class="card panel" style="margin-bottom:24px;">
       <span class="step-label">Step 4</span>
-      <div class="hub-heading"><h2>Prepare launch</h2><span class="info-tip" tabindex="0" role="img" aria-label="About preparing a launch" data-tip="This creates a paused job in Apollo or Instantly. It does not send email by itself.">i</span></div>
-      <p class="section-intro">Confirm the checklist below, choose Apollo or Instantly, then prepare a paused launch. Your sending mailbox and final send are set up in that provider—not here.</p>
+      <div class="hub-heading"><h2>Prepare launch</h2><span class="info-tip" tabindex="0" role="img" aria-label="About preparing a launch" data-tip="Prepare stores a paused launch job here. Push to Apollo creates an inactive sequence and enrolls contacts. You still activate sending in Apollo.">i</span></div>
+      <p class="section-intro">Confirm the checklist, choose Apollo or Instantly, then prepare a paused job. For Apollo, use <strong>Push to Apollo</strong> next—that creates an inactive sequence. Activate sending in Apollo when ready.</p>
       <ul class="launch-checklist" id="launchChecklist">
         <li id="launchCheckCampaign" class="is-blocked"><span class="dot warn"></span> Campaign saved</li>
         <li id="launchCheckCopy" class="is-blocked"><span class="dot warn"></span> Three email variants ready</li>
@@ -357,6 +365,7 @@
           <div class="action-row">
             <button id="prepareLaunchBtn" class="primary-btn" type="button">Prepare launch (does not send)</button>
           </div>
+          <div id="launchPanelStatus" class="status-message" aria-live="polite"></div>
         </div>
         <div>
           <h3 style="margin:0 0 10px; font-size:16px;">Launch queue</h3>
@@ -413,6 +422,11 @@
     const holdApolloBtn = document.getElementById('holdApolloBtn');
     const holdApolloTopBtn = document.getElementById('holdApolloTopBtn');
     const holdApolloBottomBtn = document.getElementById('holdApolloBottomBtn');
+    const apolloSelectAllCheckbox = document.getElementById('apolloSelectAllCheckbox');
+    const apolloSelectAllBtn = document.getElementById('apolloSelectAllBtn');
+    const apolloClearSelectionBtn = document.getElementById('apolloClearSelectionBtn');
+    const apolloSelectAllBottomBtn = document.getElementById('apolloSelectAllBottomBtn');
+    const apolloClearSelectionBottomBtn = document.getElementById('apolloClearSelectionBottomBtn');
     const apolloSearchNextBtn = document.getElementById('apolloSearchNextBtn');
     const apolloSearchNextBottomBtn = document.getElementById('apolloSearchNextBottomBtn');
     const apolloNextBatchBtn = document.getElementById('apolloNextBatchBtn');
@@ -447,6 +461,7 @@
     const assignLeadsBtn = document.getElementById('assignLeadsBtn');
     const assignTargetLabel = document.getElementById('assignTargetLabel');
     const assignPanelStatus = document.getElementById('assignPanelStatus');
+    const launchPanelStatus = document.getElementById('launchPanelStatus');
     const crmAssignRoundTripBtn = document.getElementById('crmAssignRoundTripBtn');
     const openCrmForCampaignBtn = document.getElementById('openCrmForCampaignBtn');
     const openCampaignsLibraryBtn = document.getElementById('openCampaignsLibraryBtn');
@@ -591,10 +606,26 @@
       return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
     }
 
+    function getApolloSelectableCheckboxes() {
+      return Array.from(apolloResults.querySelectorAll('input[data-apollo-index]:not(:disabled)'));
+    }
+
+    function setApolloBatchSelection(selected) {
+      getApolloSelectableCheckboxes().forEach((input) => {
+        input.checked = Boolean(selected);
+      });
+      updateApolloSelectionCount();
+    }
+
     function updateApolloSelectionCount() {
-      const count = apolloResults.querySelectorAll('input[data-apollo-index]:checked').length;
+      const checkboxes = getApolloSelectableCheckboxes();
+      const count = checkboxes.filter((input) => input.checked).length;
       if (apolloSelectedCount) {
-        apolloSelectedCount.textContent = `${count} selected`;
+        apolloSelectedCount.textContent = `${count} of ${checkboxes.length} selected`;
+      }
+      if (apolloSelectAllCheckbox) {
+        apolloSelectAllCheckbox.checked = checkboxes.length > 0 && count === checkboxes.length;
+        apolloSelectAllCheckbox.indeterminate = count > 0 && count < checkboxes.length;
       }
       const hasResults = apolloSearchResults.length > 0;
       apolloStickyActions?.classList.toggle('is-visible', hasResults);
@@ -627,7 +658,7 @@
       }
 
       apolloResults.innerHTML = apolloSearchResults.map((lead, index) => `
-        <div class="apollo-result">
+        <label class="apollo-result">
           <input type="checkbox" data-apollo-index="${index}" ${lead.apollo_contact_id ? '' : 'disabled'} aria-label="Select ${escapeHtml(`${lead.first_name} ${lead.last_name}`.trim() || 'prospect')}">
           <span>
             <strong>${escapeHtml(`${lead.first_name} ${lead.last_name}`.trim() || 'Unnamed prospect')}</strong>
@@ -637,7 +668,7 @@
           <div class="apollo-result-actions">
             <button class="secondary-btn keep-one-apollo-btn" type="button" data-apollo-index="${index}" ${lead.apollo_contact_id ? '' : 'disabled'}>Keep</button>
           </div>
-        </div>
+        </label>
       `).join('');
       updateApolloSelectionCount();
     }
@@ -1437,6 +1468,15 @@
       assignPanelStatus.textContent = message || '';
       assignPanelStatus.className = 'status-message';
       if (type) assignPanelStatus.classList.add(type);
+      if (message) assignPanelStatus.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function setLaunchPanelStatus(message, type = '') {
+      if (!launchPanelStatus) return;
+      launchPanelStatus.textContent = message || '';
+      launchPanelStatus.className = 'status-message';
+      if (type) launchPanelStatus.classList.add(type);
+      if (message) launchPanelStatus.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function crmAssignRoundTripHref(campaignId = currentCampaignId) {
@@ -1667,28 +1707,69 @@
         return;
       }
 
-      launchList.innerHTML = jobs.map((job) => `
-        <div class="launch-row">
-          <div><strong>${escapeHtml(job.campaignName || 'Untitled campaign')}</strong><span>${escapeHtml(job.id || '')}</span></div>
-          <div><strong>Provider</strong><span>${escapeHtml(job.platform || '-')}</span></div>
-          <div><strong>Status</strong><span>${escapeHtml(job.status || '-')}</span></div>
-          <div><strong>Action</strong><span>Activate in provider</span></div>
-        </div>
-      `).join('');
+      launchList.innerHTML = jobs.map((job) => {
+        const platform = String(job.platform || '').toLowerCase();
+        const status = String(job.status || '').toLowerCase();
+        const sequenceId = job.payload?.apollo_sequence_id || '';
+        const pushed = status === 'pushed' || Boolean(sequenceId);
+        let actionHtml = '<span>Prepare complete</span>';
+        if (platform === 'apollo') {
+          actionHtml = pushed
+            ? `<a class="secondary-btn" href="https://app.apollo.io/#/sequences/${encodeURIComponent(sequenceId)}" target="_blank" rel="noopener">Open in Apollo</a>`
+            : `<button class="primary-btn push-apollo-btn" type="button" data-job-id="${escapeHtml(job.id || '')}">Push to Apollo (paused)</button>`;
+        } else if (platform === 'instantly') {
+          actionHtml = '<span>Instantly push not wired yet</span>';
+        }
+        return `
+          <div class="launch-row">
+            <div><strong>${escapeHtml(job.campaignName || 'Untitled campaign')}</strong><span>${escapeHtml(job.id || '')}</span></div>
+            <div><strong>Provider</strong><span>${escapeHtml(job.platform || '-')}</span></div>
+            <div><strong>Status</strong><span>${escapeHtml(job.status || '-')}${pushed && sequenceId ? ` · seq ${escapeHtml(sequenceId)}` : ''}</span></div>
+            <div><strong>Action</strong>${actionHtml}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function pushLaunchJobToApollo(jobId) {
+      if (!jobId) {
+        setLaunchPanelStatus('Missing launch job id.', 'error');
+        return;
+      }
+      setLaunchPanelStatus('Pushing inactive sequence to Apollo...', '');
+      try {
+        const response = await fetch('/.netlify/functions/push-to-apollo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not push to Apollo');
+        await loadSavedCampaigns();
+        const message = result.alreadyPushed
+          ? `Already pushed to Apollo${result.sequenceName ? ` (“${result.sequenceName}”)` : ''}. Activate it there to send.`
+          : (result.message || `Pushed ${result.enrolled || 0} contacts to an inactive Apollo sequence.`);
+        setLaunchPanelStatus(message, 'success');
+      } catch (error) {
+        setLaunchPanelStatus(error.message || 'Could not push to Apollo.', 'error');
+      }
     }
 
     async function assignSelectedLeads() {
       const campaignId = currentCampaignId;
       if (!campaignId) {
-        setStatus('Save this campaign in Step 3 before assigning leads.', 'error');
+        const message = 'Save this campaign above first, then assign leads.';
+        setAssignPanelStatus(message, 'error');
+        if (assignmentHint) assignmentHint.textContent = message;
+        document.getElementById('saveCampaignBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
       if (!selectedLeadEmails.size) {
-        setStatus('Select at least one lead in Step 2 first.', 'error');
+        setAssignPanelStatus('Select at least one lead in Step 2 first.', 'error');
         return;
       }
 
-      setStatus(`Assigning selected leads to ${currentCampaignName()}...`, '');
+      setAssignPanelStatus(`Assigning selected leads to ${currentCampaignName()}...`, '');
       try {
         const response = await fetch('/.netlify/functions/assign-campaign-leads', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1700,9 +1781,10 @@
         await loadLeadHub();
         await loadSavedCampaigns();
         updateAssignTargetLabel();
-        setStatus(`Assigned ${result.assigned} leads to ${currentCampaignName()}. Continue to Step 4 when ready.`, 'success');
+        updateSelectionCount();
+        setAssignPanelStatus(`Assigned ${result.assigned} leads to ${currentCampaignName()}. Continue to Step 4 when ready.`, 'success');
       } catch (error) {
-        setStatus(error.message || 'Could not assign leads.', 'error');
+        setAssignPanelStatus(error.message || 'Could not assign leads.', 'error');
       }
     }
 
@@ -2006,24 +2088,38 @@
       }
     }
 
+    function getLeadsAssignedToCampaign(campaignId = currentCampaignId) {
+      if (!campaignId) return [];
+      return currentLeads.filter((lead) =>
+        (lead.campaign_leads || []).some((membership) => membership.campaign_id === campaignId)
+      );
+    }
+
     async function prepareLaunch() {
       updateLaunchChecklist();
       if (!currentCampaignId) {
-        setStatus('Save the campaign in Step 3 before preparing launch.', 'error');
+        setLaunchPanelStatus('Save the campaign in Step 3 before preparing launch.', 'error');
+        document.getElementById('saveCampaignBtn')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
 
       if (!campaignHasAssignedLeads()) {
-        setStatus('Assign leads to this campaign in Step 3 before preparing launch.', 'error');
+        setLaunchPanelStatus('Assign leads to this campaign in Step 3 before preparing launch.', 'error');
         return;
       }
 
       if (countDraftVariants() !== 3) {
-        setStatus('Generate and review all three email variants in Step 3 first.', 'error');
+        setLaunchPanelStatus('Generate and review all three email variants in Step 3 first.', 'error');
         return;
       }
 
-      setStatus('Preparing a paused launch. No emails will be sent yet...', '');
+      const assignedLeads = getLeadsAssignedToCampaign();
+      if (!assignedLeads.length) {
+        setLaunchPanelStatus('Assigned leads are not loaded yet. Refresh leads in Step 2, then try again.', 'error');
+        return;
+      }
+
+      setLaunchPanelStatus('Preparing a paused launch. No emails will be sent yet...', '');
 
       try {
         const response = await fetch('/.netlify/functions/prepare-launch', {
@@ -2033,7 +2129,7 @@
             campaignId: currentCampaignId,
             platform: launchPlatformInput.value,
             personalizationMode: personalizationModeInput.value || 'Email only',
-            leads: currentLeads,
+            leads: assignedLeads,
             drafts: currentDrafts
           })
         });
@@ -2042,10 +2138,10 @@
 
         campaignStatusInput.value = 'Ready - paused';
         await loadSavedCampaigns();
-        setStatus(`Launch prepared for ${result.platform}. Activate it in ${result.platform} when you are ready to send.`, 'success');
+        setLaunchPanelStatus(`Launch prepared for ${result.platform}. Activate it in ${result.platform} when you are ready to send.`, 'success');
         updateWorkflowProgress();
       } catch (error) {
-        setStatus(error.message || 'Could not prepare launch.', 'error');
+        setLaunchPanelStatus(error.message || 'Could not prepare launch.', 'error');
       }
     }
 
@@ -2318,6 +2414,13 @@
     holdApolloBtn.addEventListener('click', () => withButtonBusy(holdApolloBtn, holdSelectedApolloLeads, 'Keeping prospects...'));
     holdApolloTopBtn?.addEventListener('click', () => withButtonBusy(holdApolloTopBtn, holdSelectedApolloLeads, 'Keeping prospects...'));
     holdApolloBottomBtn?.addEventListener('click', () => withButtonBusy(holdApolloBottomBtn, holdSelectedApolloLeads, 'Keeping prospects...'));
+    apolloSelectAllCheckbox?.addEventListener('change', () => {
+      setApolloBatchSelection(apolloSelectAllCheckbox.checked);
+    });
+    apolloSelectAllBtn?.addEventListener('click', () => setApolloBatchSelection(true));
+    apolloClearSelectionBtn?.addEventListener('click', () => setApolloBatchSelection(false));
+    apolloSelectAllBottomBtn?.addEventListener('click', () => setApolloBatchSelection(true));
+    apolloClearSelectionBottomBtn?.addEventListener('click', () => setApolloBatchSelection(false));
     apolloSearchNextBtn?.addEventListener('click', () => loadNextApolloBatch(apolloSearchNextBtn));
     apolloSearchNextBottomBtn?.addEventListener('click', () => loadNextApolloBatch(apolloSearchNextBottomBtn));
     apolloNextBatchBtn?.addEventListener('click', () => loadNextApolloBatch(apolloNextBatchBtn));
@@ -2334,8 +2437,11 @@
     });
     apolloResults.addEventListener('click', (event) => {
       const keepOneBtn = event.target.closest('.keep-one-apollo-btn');
-      if (!keepOneBtn || keepOneBtn.disabled) return;
-      withButtonBusy(keepOneBtn, () => holdOneApolloLead(keepOneBtn.dataset.apolloIndex), 'Keeping...');
+      if (keepOneBtn) {
+        event.preventDefault();
+        if (keepOneBtn.disabled) return;
+        withButtonBusy(keepOneBtn, () => holdOneApolloLead(keepOneBtn.dataset.apolloIndex), 'Keeping...');
+      }
     });
     enrichApolloBtn.addEventListener('click', () => withButtonBusy(enrichApolloBtn, enrichSelectedApolloLeads, 'Looking up emails...'));
     importApolloBtn.addEventListener('click', () => withButtonBusy(importApolloBtn, importSelectedApolloLeads, 'Importing prospects...'));
@@ -2350,6 +2456,11 @@
     });
     saveCampaignBtn.addEventListener('click', () => withButtonBusy(saveCampaignBtn, saveCampaignToSupabase, 'Saving campaign...'));
     prepareLaunchBtn.addEventListener('click', () => withButtonBusy(prepareLaunchBtn, prepareLaunch, 'Preparing launch...'));
+    launchList?.addEventListener('click', (event) => {
+      const pushBtn = event.target.closest('.push-apollo-btn');
+      if (!pushBtn) return;
+      withButtonBusy(pushBtn, () => pushLaunchJobToApollo(pushBtn.dataset.jobId), 'Pushing to Apollo...');
+    });
 
     async function bootstrapWorkflow() {
       const campaignId = new URLSearchParams(window.location.search).get('campaign');

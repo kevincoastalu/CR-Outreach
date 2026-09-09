@@ -813,6 +813,26 @@
       margin-right: 0;
     }
 
+    .apollo-select-all {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .apollo-select-all input {
+      margin: 0;
+    }
+
     .apollo-queue {
       margin-top: 18px;
       padding-top: 16px;
@@ -1231,7 +1251,7 @@
 
     .launch-row {
       display: grid;
-      grid-template-columns: 1.3fr 0.7fr 0.7fr 0.8fr;
+      grid-template-columns: 1.3fr 0.7fr 0.7fr minmax(160px, 1fr);
       gap: 12px;
       align-items: center;
       padding: 12px;
@@ -1243,6 +1263,13 @@
 
     .launch-row strong { display: block; margin-bottom: 4px; }
     .launch-row span { color: var(--muted); }
+    .launch-row .primary-btn,
+    .launch-row .secondary-btn {
+      width: 100%;
+      justify-content: center;
+      text-align: center;
+      text-decoration: none;
+    }
 
     table {
       width: 100%;

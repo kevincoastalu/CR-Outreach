@@ -13,9 +13,9 @@
     <section class="card panel">
       <div class="hub-heading">
         <h2>Launches</h2>
-        <span class="info-tip" tabindex="0" role="img" aria-label="About launches" data-tip="Prepared launch jobs appear here. Select a row to expand details. Activate the final send in Apollo or Instantly.">i</span>
+        <span class="info-tip" tabindex="0" role="img" aria-label="About launches" data-tip="Prepared jobs appear here. For Apollo, push creates an inactive sequence and enrolls contacts. Activate sending in Apollo.">i</span>
       </div>
-      <p class="page-intro">Every prepared launch job in a compact list. Click a row to expand details—only one stays open at a time.</p>
+      <p class="page-intro">Prepared launch jobs in one list. Expand a row to push to Apollo (inactive) or open the campaign.</p>
       <div class="hub-actions">
         <button class="primary-btn" type="button" data-nav-href="index.html#prepare-launch">Prepare a launch</button>
         <button class="secondary-btn" type="button" data-nav-href="campaigns.html">Browse Campaigns</button>
@@ -27,7 +27,7 @@
 
   <script src="shared.js"></script>
   <script>
-    const { escapeHtml, setStatus, topbar, bindNavButtons } = window.CyRiskShared;
+    const { escapeHtml, setStatus, topbar, bindNavButtons, withButtonBusy } = window.CyRiskShared;
     document.getElementById('topbarMount').innerHTML = topbar('launches');
     bindNavButtons(document);
 
@@ -49,6 +49,17 @@
       launchList.innerHTML = launchJobs.map((job) => {
         const id = jobRowId(job);
         const isOpen = openLaunchId === id;
+        const platform = String(job.platform || '').toLowerCase();
+        const status = String(job.status || '').toLowerCase();
+        const sequenceId = job.payload?.apollo_sequence_id || '';
+        const pushed = status === 'pushed' || Boolean(sequenceId);
+        const apolloActions = platform === 'apollo'
+          ? (pushed
+            ? `<a class="secondary-btn" href="https://app.apollo.io/#/sequences/${encodeURIComponent(sequenceId)}" target="_blank" rel="noopener">Open in Apollo</a>`
+            : `<button class="primary-btn push-apollo-btn" type="button" data-job-id="${escapeHtml(job.id || '')}">Push to Apollo (paused)</button>`)
+          : (platform === 'instantly'
+            ? '<span class="muted">Instantly push not wired yet</span>'
+            : '');
         return `
           <article class="stack-item${isOpen ? ' is-open' : ''}" data-launch-id="${escapeHtml(id)}">
             <button class="stack-summary" type="button" data-toggle-id="${escapeHtml(id)}" aria-expanded="${isOpen ? 'true' : 'false'}">
@@ -67,8 +78,16 @@
               <p><strong>Job ID:</strong> ${escapeHtml(job.id || '-')}</p>
               <p><strong>Provider:</strong> ${escapeHtml(job.platform || '-')}</p>
               <p><strong>Status:</strong> ${escapeHtml(job.status || '-')}</p>
-              <p><strong>Next step:</strong> Activate this send in ${escapeHtml(job.platform || 'your email provider')}. The sending mailbox is configured there.</p>
+              ${sequenceId ? `<p><strong>Apollo sequence:</strong> ${escapeHtml(sequenceId)}</p>` : ''}
+              <p><strong>Next step:</strong> ${
+                platform === 'apollo'
+                  ? (pushed
+                    ? 'Sequence is in Apollo as inactive. Activate it there when you are ready to send.'
+                    : 'Push to Apollo to create an inactive sequence and enroll assigned contacts.')
+                  : `Activate this send in ${escapeHtml(job.platform || 'your email provider')}.`
+              }</p>
               <div class="mini-campaign-actions">
+                ${apolloActions}
                 ${job.campaignId ? `<button class="secondary-btn" type="button" data-nav-href="index.html?campaign=${encodeURIComponent(job.campaignId)}#prepare-launch">Open campaign</button>` : ''}
                 <button class="secondary-btn" type="button" data-nav-href="campaigns.html">Browse Campaigns</button>
               </div>
@@ -76,6 +95,33 @@
           </article>
         `;
       }).join('');
+    }
+
+    async function pushLaunchJobToApollo(jobId) {
+      if (!jobId) {
+        setStatus(statusMessage, 'Missing launch job id.', 'error');
+        return;
+      }
+      setStatus(statusMessage, 'Pushing inactive sequence to Apollo...', '');
+      try {
+        const response = await fetch('/.netlify/functions/push-to-apollo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not push to Apollo');
+        await loadLaunches();
+        setStatus(
+          statusMessage,
+          result.alreadyPushed
+            ? `Already pushed to Apollo${result.sequenceName ? ` (“${result.sequenceName}”)` : ''}.`
+            : (result.message || `Pushed ${result.enrolled || 0} contacts to Apollo (inactive).`),
+          'success'
+        );
+      } catch (error) {
+        setStatus(statusMessage, error.message || 'Could not push to Apollo.', 'error');
+      }
     }
 
     async function loadLaunches() {
@@ -99,6 +145,13 @@
     }
 
     launchList.addEventListener('click', (event) => {
+      const pushBtn = event.target.closest('.push-apollo-btn');
+      if (pushBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        withButtonBusy(pushBtn, () => pushLaunchJobToApollo(pushBtn.dataset.jobId), 'Pushing to Apollo...');
+        return;
+      }
       const toggle = event.target.closest('[data-toggle-id]');
       if (!toggle) return;
       const id = toggle.dataset.toggleId || '';
