@@ -34,19 +34,20 @@ export const handler = async (event) => {
     );
 
     const baseCampaign = { name, objective, target_segment: segment, status };
-    const fullCampaign = { ...baseCampaign, cta, personalization_mode: personalizationMode };
     let { data: campaign, error: campaignError } = await supabase
       .from('campaigns')
-      .insert(fullCampaign)
+      .insert(baseCampaign)
       .select()
       .single();
 
-    if (campaignError && /column .* does not exist|schema cache/i.test(campaignError.message)) {
-      ({ data: campaign, error: campaignError } = await supabase
+    if (!campaignError && campaign?.id && (cta || personalizationMode)) {
+      const { error: optionalFieldError } = await supabase
         .from('campaigns')
-        .insert(baseCampaign)
-        .select()
-        .single());
+        .update({ cta, personalization_mode: personalizationMode })
+        .eq('id', campaign.id);
+      if (optionalFieldError && !/column .* does not exist|schema cache/i.test(optionalFieldError.message)) {
+        campaignError = optionalFieldError;
+      }
     }
 
     if (campaignError) {
