@@ -55,7 +55,7 @@
       <div class="get-leads-grid">
         <div>
           <h3 style="margin:0 0 10px; font-size:16px;">Find leads in Apollo</h3>
-          <p class="muted" style="margin:0 0 14px;">Search → keep the good ones → add emails if needed → import into your lead list.</p>
+          <p class="muted" style="margin:0 0 14px;">Search → Keep on each row or Keep selected (sticky + bottom) → add emails if needed → import.</p>
           <div class="campaign-builder" style="grid-template-columns:1fr;">
             <div>
               <div class="field">
@@ -88,7 +88,29 @@
             </div>
           </div>
           <div id="apolloStatus" class="status-message" aria-live="polite"></div>
-          <div id="apolloResults" class="apollo-results"></div>
+          <div id="apolloResultsPanel" class="apollo-results-panel">
+            <div id="apolloStickyActions" class="apollo-sticky-actions" aria-live="polite">
+              <span id="apolloSelectedCount" class="selection-count">0 selected</span>
+              <button id="holdApolloTopBtn" class="primary-btn" type="button">Keep selected</button>
+              <button id="apolloSearchNextBtn" class="secondary-btn" type="button">Search next batch</button>
+            </div>
+            <div id="apolloNextPanel" class="apollo-next-panel" role="status">
+              <strong id="apolloNextTitle">Prospects saved</strong>
+              <p id="apolloNextMessage">What would you like to do next?</p>
+              <div class="action-row" style="margin-top:0;">
+                <button id="apolloNextBatchBtn" class="primary-btn" type="button">Show next prospects</button>
+                <button id="apolloGoQueueBtn" class="secondary-btn" type="button">Review saved list</button>
+                <button id="apolloGoStep2Btn" class="secondary-btn" type="button">Continue to Step 2</button>
+              </div>
+            </div>
+            <div id="apolloResults" class="apollo-results"></div>
+            <div id="apolloBottomActions" class="apollo-bottom-actions">
+              <div class="action-row">
+                <button id="holdApolloBottomBtn" class="primary-btn" type="button">Keep selected</button>
+                <button id="apolloSearchNextBottomBtn" class="secondary-btn" type="button">Search next batch</button>
+              </div>
+            </div>
+          </div>
           <div class="apollo-queue">
             <h3>Saved for import <span id="apolloQueueCount" class="muted">0</span> <span class="info-tip" tabindex="0" role="img" aria-label="About saved prospects" data-tip="Keep good prospects here while you search again. Add emails when ready, then import them into your lead list.">i</span></h3>
             <div class="action-row">
@@ -131,8 +153,8 @@
 
     <section id="leads-hub" class="card panel" style="margin-bottom:24px;">
       <span class="step-label">Step 2</span>
-      <div class="hub-heading"><h2>Review &amp; select leads</h2><span class="info-tip" tabindex="0" role="img" aria-label="About reviewing leads" data-tip="Search, filter, and sort your leads, then select the prospects you want for the campaign you will create next.">i</span></div>
-      <p class="section-intro">Find and select the prospects for this campaign. For full CRM tools (organize, edit, browse all leads), open <a href="leads.html" style="color:var(--accent);">Leads</a>.</p>
+      <div class="hub-heading"><h2>Review &amp; select leads</h2><span class="info-tip" tabindex="0" role="img" aria-label="About reviewing leads" data-tip="Check the prospects you want for the campaign you are creating in Step 3. Your selection carries forward automatically.">i</span></div>
+      <p class="section-intro">Check the prospects for <strong>this</strong> campaign (Apollo imports, uploads, or existing leads). That selection is what Step 3 assigns after you save. For full CRM tools, open <a href="leads.html" style="color:var(--accent);">Leads</a>.</p>
       <div class="lead-toolbar">
         <div class="field">
           <label for="leadHubFilter">Search</label>
@@ -172,7 +194,7 @@
         <button id="selectAllLeadsBtn" class="secondary-btn" type="button">Select all matching</button>
         <button id="clearLeadSelectionBtn" class="secondary-btn" type="button">Clear selection</button>
         <span id="selectionCount" class="selection-count">0 leads selected</span>
-        <span id="reviewHint" class="selection-count">Select leads here, then create the campaign in Step 3.</span>
+        <span id="reviewHint" class="selection-count">Select leads for the campaign you will create in Step 3.</span>
       </div>
       <div class="lead-meta-row">
         <span id="leadFilterSummary">0 leads shown</span>
@@ -210,8 +232,8 @@
 
     <section id="campaigns-hub" class="card panel" style="margin-bottom:24px;">
       <span class="step-label">Step 3</span>
-      <div class="hub-heading"><h2>Write campaign</h2><span class="info-tip" tabindex="0" role="img" aria-label="About writing a campaign" data-tip="Describe what you want the outreach to achieve, generate draft emails, edit them, save the campaign, then assign the leads you selected in Step 2.">i</span></div>
-      <p class="section-intro">Tell the AI what you want, generate three email options, edit anything that needs a human touch, then save. After the campaign is saved, assign the leads you selected in Step 2. Sequence timing is Day 0 / Day 4 / Day 8.</p>
+      <div class="hub-heading"><h2>Write campaign</h2><span class="info-tip" tabindex="0" role="img" aria-label="About writing a campaign" data-tip="Describe the outreach goal, generate drafts, edit, then save. After saving, assign the leads you checked in Step 2 to this campaign.">i</span></div>
+      <p class="section-intro">Tell the AI what you want, generate three email options, edit anything that needs a human touch, then save. After saving, attach the Step 2 selection to <strong>this</strong> campaign. Sequence timing is Day 0 / Day 4 / Day 8.</p>
       <div class="campaign-builder">
         <div>
           <div class="field">
@@ -257,13 +279,11 @@
       <div id="draftGrid" class="draft-grid"></div>
 
       <div class="assign-panel" style="margin-top:18px; padding-top:16px; border-top:1px solid var(--border);">
-        <h3 style="margin:0 0 8px; font-size:16px;">Assign leads to this campaign</h3>
-        <p class="muted" style="margin:0 0 12px;">Select prospects in Step 2, save this campaign, then assign them here.</p>
+        <h3 style="margin:0 0 8px; font-size:16px;">Assign Step 2 leads to this campaign</h3>
+        <p class="muted" style="margin:0 0 12px;">Uses the leads you checked in Step 2. They attach only to the campaign you are writing above—not to other campaigns. To manage leads across campaigns later, use the <a href="leads.html" style="color:var(--accent);">Leads</a> hub before launch.</p>
+        <p id="assignTargetLabel" class="selection-count" style="margin:0 0 12px;">Campaign target: save this campaign first.</p>
         <div class="lead-selection-bar">
-          <select id="assignCampaignSelect" aria-label="Campaign to assign selected leads to">
-            <option value="">Choose campaign...</option>
-          </select>
-          <button id="assignLeadsBtn" class="primary-btn" type="button">Assign selected leads</button>
+          <button id="assignLeadsBtn" class="primary-btn" type="button">Assign selected leads to this campaign</button>
           <span id="assignSelectionCount" class="selection-count">0 leads selected</span>
           <span id="assignmentHint" class="selection-count">Save this campaign before assigning leads.</span>
         </div>
@@ -271,9 +291,10 @@
 
       <div>
         <div class="hub-heading" style="margin-top:16px;">
-          <h3 style="margin:0; font-size:16px;">Saved campaigns</h3>
+          <h3 style="margin:0; font-size:16px;">Open a saved campaign</h3>
           <a href="campaigns.html" class="muted" style="margin-left:auto; font-size:13px; color:var(--accent);">Open campaigns library</a>
         </div>
+        <p class="muted" style="margin:0 0 10px;">Load a past campaign here to edit its copy or prepare launch. Lead assignment in this step always goes to the campaign loaded above.</p>
         <div id="campaignList" class="campaign-list"></div>
       </div>
     </section>
@@ -345,6 +366,20 @@
     const apolloCompanyLimitInput = document.getElementById('apolloCompanyLimit');
     const searchApolloBtn = document.getElementById('searchApolloBtn');
     const holdApolloBtn = document.getElementById('holdApolloBtn');
+    const holdApolloTopBtn = document.getElementById('holdApolloTopBtn');
+    const holdApolloBottomBtn = document.getElementById('holdApolloBottomBtn');
+    const apolloSearchNextBtn = document.getElementById('apolloSearchNextBtn');
+    const apolloSearchNextBottomBtn = document.getElementById('apolloSearchNextBottomBtn');
+    const apolloNextBatchBtn = document.getElementById('apolloNextBatchBtn');
+    const apolloGoQueueBtn = document.getElementById('apolloGoQueueBtn');
+    const apolloGoStep2Btn = document.getElementById('apolloGoStep2Btn');
+    const apolloStickyActions = document.getElementById('apolloStickyActions');
+    const apolloBottomActions = document.getElementById('apolloBottomActions');
+    const apolloNextPanel = document.getElementById('apolloNextPanel');
+    const apolloNextTitle = document.getElementById('apolloNextTitle');
+    const apolloNextMessage = document.getElementById('apolloNextMessage');
+    const apolloSelectedCount = document.getElementById('apolloSelectedCount');
+    const apolloResultsPanel = document.getElementById('apolloResultsPanel');
     const enrichApolloBtn = document.getElementById('enrichApolloBtn');
     const importApolloBtn = document.getElementById('importApolloBtn');
     const apolloStatus = document.getElementById('apolloStatus');
@@ -355,8 +390,8 @@
     const selectAllLeadsBtn = document.getElementById('selectAllLeadsBtn');
     const clearLeadSelectionBtn = document.getElementById('clearLeadSelectionBtn');
     const selectAllLeadsCheckbox = document.getElementById('selectAllLeadsCheckbox');
-    const assignCampaignSelect = document.getElementById('assignCampaignSelect');
     const assignLeadsBtn = document.getElementById('assignLeadsBtn');
+    const assignTargetLabel = document.getElementById('assignTargetLabel');
     const selectionCount = document.getElementById('selectionCount');
     const assignSelectionCount = document.getElementById('assignSelectionCount');
     const assignmentHint = document.getElementById('assignmentHint');
@@ -487,29 +522,66 @@
       return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
     }
 
+    function updateApolloSelectionCount() {
+      const count = apolloResults.querySelectorAll('input[data-apollo-index]:checked').length;
+      if (apolloSelectedCount) {
+        apolloSelectedCount.textContent = `${count} selected`;
+      }
+      const hasResults = apolloSearchResults.length > 0;
+      apolloStickyActions?.classList.toggle('is-visible', hasResults);
+      apolloBottomActions?.classList.toggle('is-visible', hasResults);
+    }
+
+    function hideApolloNextPanel() {
+      apolloNextPanel?.classList.remove('is-visible');
+    }
+
+    function showApolloNextPanel(addedCount) {
+      if (!apolloNextPanel) return;
+      apolloNextTitle.textContent = `Saved ${addedCount} prospect${addedCount === 1 ? '' : 's'}`;
+      apolloNextMessage.textContent = apolloHeldLeads.length
+        ? `You now have ${apolloHeldLeads.length} saved for import. Show the next batch, review your saved list, or continue to Step 2.`
+        : 'Show the next batch of prospects, or continue when you are ready.';
+      apolloNextPanel.classList.add('is-visible');
+      apolloResultsPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToApolloResultsTop() {
+      apolloResultsPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function renderApolloResults() {
       if (!apolloSearchResults.length) {
-        apolloResults.innerHTML = '<p class="muted">No Apollo prospects loaded yet.</p>';
+        apolloResults.innerHTML = '<p class="muted">No Apollo prospects loaded yet. Search to get the first batch.</p>';
+        updateApolloSelectionCount();
         return;
       }
 
       apolloResults.innerHTML = apolloSearchResults.map((lead, index) => `
-        <label class="apollo-result">
-          <input type="checkbox" data-apollo-index="${index}" ${lead.apollo_contact_id ? '' : 'disabled'}>
-          <span><strong>${escapeHtml(`${lead.first_name} ${lead.last_name}`.trim() || 'Unnamed prospect')}</strong><p>${escapeHtml(lead.title || 'Title unavailable')} at ${escapeHtml(lead.firm_name || 'Firm unavailable')}</p><p>${escapeHtml(lead.email || 'No verified email')} ${lead.city || lead.state ? ` · ${escapeHtml([lead.city, lead.state].filter(Boolean).join(', '))}` : ''}</p></span>
-        </label>
+        <div class="apollo-result">
+          <input type="checkbox" data-apollo-index="${index}" ${lead.apollo_contact_id ? '' : 'disabled'} aria-label="Select ${escapeHtml(`${lead.first_name} ${lead.last_name}`.trim() || 'prospect')}">
+          <span>
+            <strong>${escapeHtml(`${lead.first_name} ${lead.last_name}`.trim() || 'Unnamed prospect')}</strong>
+            <p>${escapeHtml(lead.title || 'Title unavailable')} at ${escapeHtml(lead.firm_name || 'Firm unavailable')}</p>
+            <p>${escapeHtml(lead.email || 'No verified email')}${lead.city || lead.state ? ` · ${escapeHtml([lead.city, lead.state].filter(Boolean).join(', '))}` : ''}</p>
+          </span>
+          <div class="apollo-result-actions">
+            <button class="secondary-btn keep-one-apollo-btn" type="button" data-apollo-index="${index}" ${lead.apollo_contact_id ? '' : 'disabled'}>Keep</button>
+          </div>
+        </div>
       `).join('');
+      updateApolloSelectionCount();
     }
 
     function renderApolloQueue() {
       apolloQueueCount.textContent = String(apolloHeldLeads.length);
       if (!apolloHeldLeads.length) {
-        apolloQueue.innerHTML = '<p class="muted">No prospects held yet. Search, select, and hold prospects to build the queue.</p>';
+        apolloQueue.innerHTML = '<p class="muted">No prospects saved yet. Keep good ones from search results to build this list.</p>';
         return;
       }
 
       apolloQueue.innerHTML = apolloHeldLeads.map((lead, index) => `
-        <label class="apollo-result">
+        <label class="apollo-result" style="grid-template-columns:auto 1fr;">
           <input type="checkbox" data-held-index="${index}" checked>
           <span><strong>${escapeHtml(`${lead.first_name} ${lead.last_name}`.trim() || 'Unnamed prospect')}</strong><p>${escapeHtml(lead.title || 'Title unavailable')} at ${escapeHtml(lead.firm_name || 'Firm unavailable')}</p><p>${escapeHtml(lead.email || 'Email not enriched yet')}</p></span>
         </label>
@@ -521,15 +593,29 @@
       renderApolloQueue();
     }
 
-    async function searchApollo() {
+    function selectedHeldLeads() {
+      return Array.from(apolloQueue.querySelectorAll('input[data-held-index]:checked'))
+        .map((input) => apolloHeldLeads[Number(input.dataset.heldIndex)])
+        .filter(Boolean);
+    }
+
+    async function searchApollo({ forceNextPage = false, scrollToResults = true } = {}) {
       const titles = apolloTitlesInput.value.split(',').map((value) => value.trim()).filter(Boolean);
       const keywords = apolloKeywordsInput.value.trim();
       const perPage = Number(apolloResultCountInput.value);
       const maxPerCompany = Number(apolloCompanyLimitInput.value);
       const searchKey = JSON.stringify({ titles, keywords, perPage, maxPerCompany });
-      apolloSearchPage = searchKey === apolloLastSearchKey ? apolloSearchPage + 1 : 1;
+
+      if (searchKey === apolloLastSearchKey) {
+        apolloSearchPage += 1;
+      } else {
+        apolloSearchPage = 1;
+      }
       apolloLastSearchKey = searchKey;
-      setApolloStatus('Searching Apollo...', '');
+      if (forceNextPage && apolloSearchPage < 1) apolloSearchPage = 1;
+
+      hideApolloNextPanel();
+      setApolloStatus(apolloSearchPage > 1 ? `Loading prospect batch ${apolloSearchPage}...` : 'Searching Apollo...', '');
       try {
         const response = await fetch('/.netlify/functions/search-apollo', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -547,32 +633,62 @@
         apolloSearchResults = (Array.isArray(result.people) ? result.people : [])
           .filter((lead) => lead.apollo_contact_id && !heldIds.has(lead.apollo_contact_id));
         renderApolloResults();
-        setApolloStatus(`${apolloSearchResults.length} new prospects found. Select the good ones and click Keep selected.`, 'success');
+        if (scrollToResults) scrollToApolloResultsTop();
+        if (!apolloSearchResults.length) {
+          setApolloStatus(`No new prospects in batch ${apolloSearchPage}. Try another search or review your saved list.`, 'error');
+        } else {
+          setApolloStatus(`Batch ${apolloSearchPage}: ${apolloSearchResults.length} prospects. Select and Keep, or tap Keep on any row.`, 'success');
+        }
       } catch (error) {
         setApolloStatus(error.message || 'Apollo search failed.', 'error');
       }
     }
 
-    function selectedHeldLeads() {
-      return Array.from(apolloQueue.querySelectorAll('input[data-held-index]:checked'))
-        .map((input) => apolloHeldLeads[Number(input.dataset.heldIndex)])
-        .filter(Boolean);
+    function keepApolloLeads(leads, { promptNext = true } = {}) {
+      const selected = (Array.isArray(leads) ? leads : []).filter(Boolean);
+      if (!selected.length) {
+        setApolloStatus('Select at least one Apollo prospect first.', 'error');
+        return 0;
+      }
+
+      const existingIds = new Set(apolloHeldLeads.map((lead) => lead.apollo_contact_id));
+      const added = selected.filter((lead) => lead.apollo_contact_id && !existingIds.has(lead.apollo_contact_id));
+      if (!added.length) {
+        setApolloStatus('Those prospects are already in your saved list.', 'error');
+        return 0;
+      }
+
+      const addedIds = new Set(added.map((lead) => lead.apollo_contact_id));
+      apolloHeldLeads = [...apolloHeldLeads, ...added];
+      apolloSearchResults = apolloSearchResults.filter((lead) => !addedIds.has(lead.apollo_contact_id));
+      persistApolloQueue();
+      renderApolloResults();
+      setApolloStatus(`Kept ${added.length} prospect${added.length === 1 ? '' : 's'}. ${apolloHeldLeads.length} saved for import.`, 'success');
+
+      if (promptNext || !apolloSearchResults.length) {
+        showApolloNextPanel(added.length);
+      } else {
+        hideApolloNextPanel();
+      }
+
+      return added.length;
     }
 
     function holdSelectedApolloLeads() {
       const selected = Array.from(apolloResults.querySelectorAll('input[data-apollo-index]:checked'))
         .map((input) => apolloSearchResults[Number(input.dataset.apolloIndex)])
         .filter(Boolean);
-      if (!selected.length) {
-        setApolloStatus('Select at least one Apollo prospect first.', 'error');
-        return;
-      }
+      keepApolloLeads(selected, { promptNext: true });
+    }
 
-      const existingIds = new Set(apolloHeldLeads.map((lead) => lead.apollo_contact_id));
-      const added = selected.filter((lead) => lead.apollo_contact_id && !existingIds.has(lead.apollo_contact_id));
-      apolloHeldLeads = [...apolloHeldLeads, ...added];
-      persistApolloQueue();
-      setApolloStatus(`Kept ${added.length} prospect${added.length === 1 ? '' : 's'}. Search again anytime, then add emails and import.`, 'success');
+    function holdOneApolloLead(index) {
+      const remainingBefore = apolloSearchResults.length;
+      const lead = apolloSearchResults[Number(index)];
+      keepApolloLeads(lead ? [lead] : [], { promptNext: remainingBefore <= 1 });
+    }
+
+    function loadNextApolloBatch(button) {
+      return withButtonBusy(button, () => searchApollo({ forceNextPage: true, scrollToResults: true }), 'Loading next batch...');
     }
 
     async function importSelectedApolloLeads() {
@@ -833,6 +949,22 @@
       updateWorkflowProgress();
     }
 
+    function currentCampaignName() {
+      const fromInput = (campaignNameInput?.value || '').trim();
+      if (fromInput) return fromInput;
+      const saved = savedCampaigns.find((campaign) => campaign.id === currentCampaignId);
+      return saved?.name || 'this campaign';
+    }
+
+    function updateAssignTargetLabel() {
+      if (!assignTargetLabel) return;
+      if (!currentCampaignId) {
+        assignTargetLabel.textContent = 'Campaign target: save this campaign first.';
+        return;
+      }
+      assignTargetLabel.textContent = `Campaign target: ${currentCampaignName()}`;
+    }
+
     function updateSelectionCount() {
       const selectedLabel = `${selectedLeadEmails.size} lead${selectedLeadEmails.size === 1 ? '' : 's'} selected`;
       selectionCount.textContent = selectedLabel;
@@ -842,31 +974,26 @@
         .map(leadEmailKey)
         .filter(Boolean);
       selectAllLeadsCheckbox.checked = pageEmails.length > 0 && pageEmails.every((email) => selectedLeadEmails.has(email));
+      updateAssignTargetLabel();
 
       if (!currentLeads.length) {
-        if (reviewHint) reviewHint.textContent = 'Import or add leads in Step 1, then select them here.';
-        assignmentHint.textContent = 'Save leads in Step 1, select them in Step 2, then return here to assign.';
+        if (reviewHint) reviewHint.textContent = 'Import or add leads in Step 1, then select them here for this campaign.';
+        assignmentHint.textContent = 'Import leads in Step 1, select them in Step 2, save this campaign, then assign.';
       } else if (!selectedLeadEmails.size) {
-        if (reviewHint) reviewHint.textContent = 'Select the prospects you want, then create the campaign in Step 3.';
+        if (reviewHint) reviewHint.textContent = 'Select the prospects for this campaign, then continue to Step 3.';
         assignmentHint.textContent = 'Select leads in Step 2 first.';
-      } else if (!currentCampaignId && !assignCampaignSelect.value) {
-        if (reviewHint) reviewHint.textContent = `${selectedLeadEmails.size} selected. Next: write and save the campaign in Step 3.`;
-        assignmentHint.textContent = 'Save this campaign (or choose a saved campaign) before assigning.';
-      } else if (!assignCampaignSelect.value) {
-        if (reviewHint) reviewHint.textContent = `${selectedLeadEmails.size} selected. Assign them in Step 3 after the campaign is saved.`;
-        assignmentHint.textContent = 'Choose a campaign for the selected leads.';
+      } else if (!currentCampaignId) {
+        if (reviewHint) reviewHint.textContent = `${selectedLeadEmails.size} selected for this campaign. Next: write and save in Step 3.`;
+        assignmentHint.textContent = 'Save this campaign above, then assign your Step 2 selection.';
       } else {
-        if (reviewHint) reviewHint.textContent = `${selectedLeadEmails.size} selected. Assign them in Step 3.`;
-        assignmentHint.textContent = 'Ready to assign selected leads to the chosen campaign.';
+        if (reviewHint) reviewHint.textContent = `${selectedLeadEmails.size} selected for this campaign. Assign them in Step 3.`;
+        assignmentHint.textContent = `Ready to assign ${selectedLeadEmails.size} lead${selectedLeadEmails.size === 1 ? '' : 's'} to ${currentCampaignName()}.`;
       }
       localStorage.setItem(SELECTION_KEY, JSON.stringify([...selectedLeadEmails]));
       updateWorkflowProgress();
     }
 
     function populateCampaignSelect() {
-      assignCampaignSelect.innerHTML = '<option value="">Choose campaign...</option>' + savedCampaigns.map((campaign) => `<option value="${campaign.id}">${escapeHtml(campaign.name || 'Untitled campaign')}</option>`).join('');
-      if (currentCampaignId) assignCampaignSelect.value = currentCampaignId;
-
       const previousAssignment = leadAssignmentFilterInput.value;
       leadAssignmentFilterInput.innerHTML = [
         '<option value="">All leads</option>',
@@ -878,6 +1005,7 @@
         ? previousAssignment
         : '';
       leadAssignmentFilter = leadAssignmentFilterInput.value;
+      updateAssignTargetLabel();
       if (currentLeads.length) renderRows(currentLeads);
     }
 
@@ -899,9 +1027,9 @@
     }
 
     async function assignSelectedLeads() {
-      const campaignId = assignCampaignSelect.value || currentCampaignId;
+      const campaignId = currentCampaignId;
       if (!campaignId) {
-        setStatus('Save the campaign in Step 3, or choose a saved campaign, before assigning leads.', 'error');
+        setStatus('Save this campaign in Step 3 before assigning leads.', 'error');
         return;
       }
       if (!selectedLeadEmails.size) {
@@ -909,7 +1037,7 @@
         return;
       }
 
-      setStatus('Assigning selected leads to the campaign...', '');
+      setStatus(`Assigning selected leads to ${currentCampaignName()}...`, '');
       try {
         const response = await fetch('/.netlify/functions/assign-campaign-leads', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -920,7 +1048,8 @@
         selectedLeadEmails.clear();
         await loadLeadHub();
         await loadSavedCampaigns();
-        setStatus(`Assigned ${result.assigned} selected leads to the campaign. Continue to Step 4 when ready.`, 'success');
+        updateAssignTargetLabel();
+        setStatus(`Assigned ${result.assigned} leads to ${currentCampaignName()}. Continue to Step 4 when ready.`, 'success');
       } catch (error) {
         setStatus(error.message || 'Could not assign leads.', 'error');
       }
@@ -1185,10 +1314,8 @@
       renderDrafts(restoredDrafts);
       saveCampaignDraftsLocally();
 
-      if (assignCampaignSelect) {
-        populateCampaignSelect();
-        assignCampaignSelect.value = currentCampaignId;
-      }
+      populateCampaignSelect();
+      updateAssignTargetLabel();
 
       const latestJob = Array.isArray(campaign.send_jobs) && campaign.send_jobs.length
         ? [...campaign.send_jobs].sort((a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0))[0]
@@ -1279,7 +1406,9 @@
         saveCampaignDraftsLocally();
         updateWorkflowProgress();
         await loadSavedCampaigns();
-        setStatus(`Campaign saved with ${result.savedDraftCount || 0} draft variants. Next: assign the leads you selected in Step 2.`, 'success');
+        updateAssignTargetLabel();
+        updateSelectionCount();
+        setStatus(`Campaign saved with ${result.savedDraftCount || 0} draft variants. Next: assign the leads you selected in Step 2 to this campaign.`, 'success');
       } catch (error) {
         setStatus(error.message || 'Could not save campaign.', 'error');
       }
@@ -1506,7 +1635,7 @@
       renderRows(currentLeads);
     });
     assignLeadsBtn.addEventListener('click', () => withButtonBusy(assignLeadsBtn, assignSelectedLeads, 'Assigning leads...'));
-    assignCampaignSelect.addEventListener('change', updateSelectionCount);
+    campaignNameInput?.addEventListener('input', updateAssignTargetLabel);
     leadHubFilterInput.addEventListener('input', () => {
       leadHubFilter = leadHubFilterInput.value.trim().toLowerCase();
       leadPage = 1;
@@ -1538,6 +1667,27 @@
     });
     searchApolloBtn.addEventListener('click', () => withButtonBusy(searchApolloBtn, searchApollo, 'Searching Apollo...'));
     holdApolloBtn.addEventListener('click', () => withButtonBusy(holdApolloBtn, holdSelectedApolloLeads, 'Keeping prospects...'));
+    holdApolloTopBtn?.addEventListener('click', () => withButtonBusy(holdApolloTopBtn, holdSelectedApolloLeads, 'Keeping prospects...'));
+    holdApolloBottomBtn?.addEventListener('click', () => withButtonBusy(holdApolloBottomBtn, holdSelectedApolloLeads, 'Keeping prospects...'));
+    apolloSearchNextBtn?.addEventListener('click', () => loadNextApolloBatch(apolloSearchNextBtn));
+    apolloSearchNextBottomBtn?.addEventListener('click', () => loadNextApolloBatch(apolloSearchNextBottomBtn));
+    apolloNextBatchBtn?.addEventListener('click', () => loadNextApolloBatch(apolloNextBatchBtn));
+    apolloGoQueueBtn?.addEventListener('click', () => {
+      hideApolloNextPanel();
+      document.querySelector('.apollo-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    apolloGoStep2Btn?.addEventListener('click', () => {
+      hideApolloNextPanel();
+      document.getElementById('leads-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    apolloResults.addEventListener('change', (event) => {
+      if (event.target.matches('input[data-apollo-index]')) updateApolloSelectionCount();
+    });
+    apolloResults.addEventListener('click', (event) => {
+      const keepOneBtn = event.target.closest('.keep-one-apollo-btn');
+      if (!keepOneBtn || keepOneBtn.disabled) return;
+      withButtonBusy(keepOneBtn, () => holdOneApolloLead(keepOneBtn.dataset.apolloIndex), 'Keeping...');
+    });
     enrichApolloBtn.addEventListener('click', () => withButtonBusy(enrichApolloBtn, enrichSelectedApolloLeads, 'Looking up emails...'));
     importApolloBtn.addEventListener('click', () => withButtonBusy(importApolloBtn, importSelectedApolloLeads, 'Importing prospects...'));
     clearApolloQueueBtn.addEventListener('click', () => {

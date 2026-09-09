@@ -564,6 +564,35 @@
       margin-top: 16px;
     }
 
+    .apollo-results-panel {
+      margin-top: 16px;
+    }
+
+    .apollo-sticky-actions {
+      display: none;
+      position: sticky;
+      top: 12px;
+      z-index: 4;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(23, 26, 33, 0.96);
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+    }
+
+    .apollo-sticky-actions.is-visible {
+      display: flex;
+    }
+
+    .apollo-sticky-actions .selection-count {
+      margin-right: 0;
+    }
+
     .apollo-queue {
       margin-top: 18px;
       padding-top: 16px;
@@ -574,7 +603,7 @@
 
     .apollo-result {
       display: grid;
-      grid-template-columns: auto 1fr;
+      grid-template-columns: auto 1fr auto;
       gap: 12px;
       align-items: start;
       padding: 12px;
@@ -586,6 +615,55 @@
     .apollo-result input { margin-top: 4px; }
     .apollo-result strong { display: block; margin-bottom: 4px; }
     .apollo-result p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+
+    .apollo-result-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: stretch;
+    }
+
+    .apollo-result-actions .secondary-btn {
+      padding: 7px 10px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .apollo-bottom-actions {
+      display: none;
+      margin-top: 12px;
+      padding-top: 4px;
+    }
+
+    .apollo-bottom-actions.is-visible {
+      display: block;
+    }
+
+    .apollo-next-panel {
+      display: none;
+      margin: 12px 0;
+      padding: 14px;
+      border: 1px solid rgba(61, 214, 198, 0.35);
+      border-radius: 12px;
+      background: var(--green-soft);
+    }
+
+    .apollo-next-panel.is-visible {
+      display: block;
+    }
+
+    .apollo-next-panel strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--green);
+    }
+
+    .apollo-next-panel p {
+      margin: 0 0 12px;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.45;
+    }
 
     .info-tip {
       position: relative;
