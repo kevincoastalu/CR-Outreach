@@ -292,6 +292,87 @@
 
     .muted { color: var(--muted); }
 
+    .campaign-builder {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field input, .field textarea, .field select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text);
+      background: white;
+    }
+
+    .field textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .draft-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .draft-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      background: var(--panel-soft);
+      border-radius: 12px;
+    }
+
+    .draft-card h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    .draft-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 5px 8px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .draft-card .subject {
+      margin: 0 0 12px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .draft-card .body {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
+      white-space: pre-wrap;
+    }
+
     .footer {
       margin-top: 18px;
       font-size: 12px;
@@ -389,6 +470,46 @@
     </section>
 
     <section class="card panel" style="margin-bottom:24px;">
+      <h2>Campaign builder</h2>
+      <div class="campaign-builder">
+        <div>
+          <div class="field">
+            <label for="campaignName">Campaign name</label>
+            <input id="campaignName" type="text" value="CyRisk Privacy Law Outreach" />
+          </div>
+          <div class="field">
+            <label for="campaignSegment">Audience segment</label>
+            <select id="campaignSegment">
+              <option>Privacy litigators</option>
+              <option>Privacy compliance counsel</option>
+              <option>Data security / privacy practice groups</option>
+              <option>All privacy-focused law firms</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="campaignObjective">Objective</label>
+            <textarea id="campaignObjective">Generate qualified replies from privacy-focused law firms interested in technical evidence behind CIPA, VPPA, and CCPA/CPRA claims.</textarea>
+          </div>
+          <div class="action-row">
+            <button id="saveCampaignBtn" class="primary-btn" type="button">Save campaign</button>
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label for="campaignStatus">Current status</label>
+            <input id="campaignStatus" type="text" value="Draft" readonly />
+          </div>
+          <div class="field">
+            <label for="sequenceSummary">Sequence</label>
+            <textarea id="sequenceSummary" readonly>Day 0 / Day 4 / Day 8: capability angle, use-case follow-up, final light nudge.</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div id="draftGrid" class="draft-grid"></div>
+    </section>
+
+    <section class="card panel" style="margin-bottom:24px;">
       <h2>Lead preview</h2>
       <div class="table-wrap">
         <table>
@@ -425,9 +546,17 @@
     const saveLeadsBtn = document.getElementById('saveLeadsBtn');
     const generateDraftsBtn = document.getElementById('generateDraftsBtn');
     const statusMessage = document.getElementById('statusMessage');
+    const draftGrid = document.getElementById('draftGrid');
+    const campaignNameInput = document.getElementById('campaignName');
+    const campaignSegmentInput = document.getElementById('campaignSegment');
+    const campaignObjectiveInput = document.getElementById('campaignObjective');
+    const saveCampaignBtn = document.getElementById('saveCampaignBtn');
+    const campaignStatusInput = document.getElementById('campaignStatus');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
+    const DRAFTS_KEY = 'cyrisk-outreach-drafts';
     let currentLeads = [];
+    let currentDrafts = {};
 
     function setStatus(message, type = '') {
       statusMessage.textContent = message || '';
@@ -550,6 +679,35 @@
       }
     }
 
+    function renderDrafts(variants) {
+      currentDrafts = variants || {};
+      const draftEntries = [
+        { key: 'subject1', bodyKey: 'body1', label: 'Variant 1' },
+        { key: 'subject2', bodyKey: 'body2', label: 'Variant 2' },
+        { key: 'subject3', bodyKey: 'body3', label: 'Variant 3' }
+      ];
+
+      draftGrid.innerHTML = draftEntries.map((entry) => `
+        <article class="draft-card">
+          <span class="draft-tag">${entry.label}</span>
+          <h3>Subject</h3>
+          <p class="subject">${(variants && variants[entry.key]) || 'Draft not generated yet.'}</p>
+          <h3>Body</h3>
+          <p class="body">${(variants && variants[entry.bodyKey]) || 'No copy available yet.'}</p>
+        </article>
+      `).join('');
+    }
+
+    function saveCampaignDraftsLocally() {
+      localStorage.setItem(DRAFTS_KEY, JSON.stringify({
+        campaignName: campaignNameInput.value,
+        campaignSegment: campaignSegmentInput.value,
+        objective: campaignObjectiveInput.value,
+        drafts: currentDrafts,
+        updatedAt: new Date().toISOString()
+      }));
+    }
+
     async function generateCampaignDrafts() {
       if (!currentLeads.length) {
         setStatus('Upload a CSV before generating drafts.', 'error');
@@ -562,7 +720,7 @@
         const response = await fetch('/.netlify/functions/generate-drafts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leads: currentLeads, segment: 'privacy litigators and privacy compliance counsel' })
+          body: JSON.stringify({ leads: currentLeads, segment: campaignSegmentInput.value || 'privacy litigators and privacy compliance counsel' })
         });
 
         const result = await response.json();
@@ -571,6 +729,9 @@
         }
 
         const variants = result.variants || {};
+        renderDrafts(variants);
+        saveCampaignDraftsLocally();
+
         const example = [
           variants.subject1,
           variants.subject2,
@@ -607,6 +768,24 @@
 
     saveLeadsBtn.addEventListener('click', saveLeadsToSupabase);
     generateDraftsBtn.addEventListener('click', generateCampaignDrafts);
+    saveCampaignBtn.addEventListener('click', () => {
+      saveCampaignDraftsLocally();
+      campaignStatusInput.value = 'Saved';
+      setStatus('Campaign draft saved locally.', 'success');
+    });
+
+    const savedDrafts = localStorage.getItem(DRAFTS_KEY);
+    if (savedDrafts) {
+      try {
+        const parsedDrafts = JSON.parse(savedDrafts);
+        if (parsedDrafts.campaignName) campaignNameInput.value = parsedDrafts.campaignName;
+        if (parsedDrafts.campaignSegment) campaignSegmentInput.value = parsedDrafts.campaignSegment;
+        if (parsedDrafts.objective) campaignObjectiveInput.value = parsedDrafts.objective;
+        if (parsedDrafts.drafts) renderDrafts(parsedDrafts.drafts);
+      } catch (error) {
+        console.warn('Could not restore saved drafts', error);
+      }
+    }
 
     loadFromStorage();
   </script>
