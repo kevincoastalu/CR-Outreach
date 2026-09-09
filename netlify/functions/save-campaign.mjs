@@ -21,6 +21,8 @@ export const handler = async (event) => {
     const status = String(body.status || 'draft').trim();
     const cta = String(body.cta || '').trim();
     const personalizationMode = String(body.personalizationMode || '').trim();
+    const solutionContext = String(body.solutionContext || '').trim();
+    const sourceDocuments = Array.isArray(body.sourceDocuments) ? body.sourceDocuments : [];
     const drafts = body.drafts && typeof body.drafts === 'object' ? body.drafts : {};
 
     if (!name) {
@@ -40,10 +42,10 @@ export const handler = async (event) => {
       .select()
       .single();
 
-    if (!campaignError && campaign?.id && (cta || personalizationMode)) {
+    if (!campaignError && campaign?.id && (cta || personalizationMode || solutionContext || sourceDocuments.length)) {
       const { error: optionalFieldError } = await supabase
         .from('campaigns')
-        .update({ cta, personalization_mode: personalizationMode })
+        .update({ cta, personalization_mode: personalizationMode, solution_context: solutionContext, source_documents: sourceDocuments })
         .eq('id', campaign.id);
       if (optionalFieldError && !/column .* does not exist|schema cache/i.test(optionalFieldError.message)) {
         campaignError = optionalFieldError;

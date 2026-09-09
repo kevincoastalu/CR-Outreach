@@ -50,6 +50,8 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS source_imported_at TIMESTAMPTZ;
 
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cta TEXT;
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS personalization_mode TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS solution_context TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS source_documents JSONB;
 
 CREATE TABLE IF NOT EXISTS email_drafts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

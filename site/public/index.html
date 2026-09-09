@@ -850,8 +850,19 @@
             <label for="campaignCta">Call to action</label>
             <textarea id="campaignCta">Reply with a domain or matter of interest.</textarea>
           </div>
+          <div class="field">
+            <label for="solutionContext">Solution context <span class="info-tip" tabindex="0" role="img" aria-label="About solution context" data-tip="Describe the product, customer outcome, differentiators, proof points, and constraints the AI should use when writing this campaign.">i</span></label>
+            <textarea id="solutionContext" placeholder="What are you positioning? Include the problem, solution, differentiators, proof points, and language to avoid.">CyRisk Insight Engine helps teams identify technical privacy and security risk in a target website. Position the practical evidence, not a generic software pitch.</textarea>
+          </div>
+          <div class="field">
+            <label for="campaignDocuments">Reference documents <span class="info-tip" tabindex="0" role="img" aria-label="About reference documents" data-tip="Upload text, Markdown, JSON, or CSV reference material. The contents are sent to the AI only for this campaign brief.">i</span></label>
+            <input id="campaignDocuments" type="file" accept=".txt,.md,.json,.csv,text/plain,text/markdown,application/json,text/csv" multiple>
+            <span id="documentList" class="muted">No reference documents added.</span>
+          </div>
           <div class="action-row">
+            <button id="newCampaignBtn" class="secondary-btn" type="button">New campaign</button>
             <button id="saveCampaignBtn" class="primary-btn" type="button">Save campaign</button>
+            <button id="generateCampaignBtn" class="secondary-btn" type="button">Generate AI copy</button>
           </div>
         </div>
         <div>
@@ -962,6 +973,11 @@
     const campaignSegmentInput = document.getElementById('campaignSegment');
     const campaignObjectiveInput = document.getElementById('campaignObjective');
     const campaignCtaInput = document.getElementById('campaignCta');
+    const solutionContextInput = document.getElementById('solutionContext');
+    const campaignDocumentsInput = document.getElementById('campaignDocuments');
+    const documentList = document.getElementById('documentList');
+    const newCampaignBtn = document.getElementById('newCampaignBtn');
+    const generateCampaignBtn = document.getElementById('generateCampaignBtn');
     const saveCampaignBtn = document.getElementById('saveCampaignBtn');
     const campaignStatusInput = document.getElementById('campaignStatus');
     const campaignList = document.getElementById('campaignList');
@@ -1009,6 +1025,7 @@
     let selectedLeadEmails = new Set();
     let leadHubFilter = '';
     let editingLeadEmail = '';
+    let referenceDocuments = [];
 
     function setApolloStatus(message, type = '') {
       apolloStatus.textContent = message || '';
@@ -1485,6 +1502,8 @@
         objective: campaignObjectiveInput.value,
         cta: campaignCtaInput.value,
         personalizationMode: personalizationModeInput.value,
+        solutionContext: solutionContextInput.value,
+        sourceDocuments: referenceDocuments,
         drafts: currentDrafts,
         updatedAt: new Date().toISOString()
       }));
@@ -1537,6 +1556,11 @@
       campaignSegmentInput.value = campaign.target_segment || campaignSegmentInput.value;
       campaignCtaInput.value = campaign.cta || campaignCtaInput.value;
       personalizationModeInput.value = campaign.personalization_mode || personalizationModeInput.value;
+      solutionContextInput.value = campaign.solution_context || solutionContextInput.value;
+      referenceDocuments = Array.isArray(campaign.source_documents) ? campaign.source_documents : [];
+      documentList.textContent = Array.isArray(campaign.source_documents) && campaign.source_documents.length
+        ? `${campaign.source_documents.length} reference document${campaign.source_documents.length === 1 ? '' : 's'} stored.`
+        : 'No reference documents added.';
       campaignStatusInput.value = campaign.status || 'draft';
       updateCampaignControls();
 
@@ -1575,6 +1599,8 @@
         segment: campaignSegmentInput.value,
         cta: campaignCtaInput.value,
         personalizationMode: personalizationModeInput.value,
+        solutionContext: solutionContextInput.value,
+        sourceDocuments: referenceDocuments,
         status: campaignStatusInput.value || 'draft',
         drafts: currentDrafts
       };
@@ -1679,9 +1705,41 @@
       }
     }
 
+    function resetCampaignBuilder() {
+      currentCampaignId = '';
+      currentDrafts = {};
+      campaignNameInput.value = 'New campaign';
+      campaignSegmentInput.selectedIndex = 0;
+      campaignObjectiveInput.value = '';
+      campaignCtaInput.value = '';
+      solutionContextInput.value = '';
+      personalizationModeInput.value = 'Email only';
+      campaignStatusInput.value = 'Draft';
+      referenceDocuments = [];
+      campaignDocumentsInput.value = '';
+      documentList.textContent = 'No reference documents added.';
+      renderDrafts({});
+      saveCampaignDraftsLocally();
+      updateCampaignControls();
+      setStatus('New campaign ready. Add a brief, reference material, and generate copy.', 'success');
+    }
+
+    async function readCampaignDocuments(event) {
+      const files = Array.from(event.target.files || []).slice(0, 5);
+      referenceDocuments = [];
+      for (const file of files) {
+        const text = (await file.text()).slice(0, 20000);
+        referenceDocuments.push({ name: file.name, text });
+      }
+      documentList.textContent = referenceDocuments.length
+        ? `${referenceDocuments.length} document${referenceDocuments.length === 1 ? '' : 's'} ready for AI context.`
+        : 'No reference documents added.';
+      saveCampaignDraftsLocally();
+    }
+
     async function generateCampaignDrafts() {
-      if (!currentLeads.length) {
-        setStatus('Upload a CSV before generating drafts.', 'error');
+      if (!campaignSegmentInput.value.trim() || !solutionContextInput.value.trim()) {
+        setStatus('Add an audience and solution context before generating drafts.', 'error');
         return;
       }
 
@@ -1695,7 +1753,9 @@
             leads: currentLeads,
             segment: campaignSegmentInput.value || 'privacy litigators and privacy compliance counsel',
             cta: campaignCtaInput.value,
-            personalizationMode: personalizationModeInput.value
+            personalizationMode: personalizationModeInput.value,
+            solutionContext: solutionContextInput.value,
+            referenceDocuments
           })
         });
 
@@ -1741,6 +1801,10 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
       setStatus(`${leads.length} leads loaded and ready to save.`, 'success');
     });
+
+    campaignDocumentsInput.addEventListener('change', readCampaignDocuments);
+    newCampaignBtn.addEventListener('click', () => resetCampaignBuilder());
+    generateCampaignBtn.addEventListener('click', () => withButtonBusy(generateCampaignBtn, generateCampaignDrafts, 'Generating AI copy...'));
 
     saveLeadsBtn.addEventListener('click', () => withButtonBusy(saveLeadsBtn, saveLeadsToSupabase, 'Saving leads...'));
     generateDraftsBtn.addEventListener('click', () => withButtonBusy(generateDraftsBtn, generateCampaignDrafts, 'Generating drafts...'));
@@ -1816,6 +1880,7 @@
         if (parsedDrafts.objective) campaignObjectiveInput.value = parsedDrafts.objective;
         if (parsedDrafts.cta) campaignCtaInput.value = parsedDrafts.cta;
         if (parsedDrafts.personalizationMode) personalizationModeInput.value = parsedDrafts.personalizationMode;
+        if (parsedDrafts.solutionContext) solutionContextInput.value = parsedDrafts.solutionContext;
         if (parsedDrafts.drafts) renderDrafts(parsedDrafts.drafts);
       } catch (error) {
         console.warn('Could not restore saved drafts', error);

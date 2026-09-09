@@ -19,9 +19,11 @@ export const handler = async (event) => {
     const segment = body.segment || 'privacy litigators and privacy compliance counsel';
     const cta = body.cta || 'Reply with a domain or matter they want checked.';
     const personalizationMode = body.personalizationMode || 'Email only';
+    const solutionContext = String(body.solutionContext || '').trim();
+    const referenceDocuments = Array.isArray(body.referenceDocuments) ? body.referenceDocuments : [];
 
-    if (!leads.length) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'No leads provided' }) };
+    if (!segment.trim() || !solutionContext.trim()) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Audience and solution context are required' }) };
     }
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -33,6 +35,8 @@ export const handler = async (event) => {
       Product: Insight Engine
       Goal: Get a reply from lawyers with interest in privacy litigation, privacy compliance, or data-security risk.
       CTA: ${cta}
+      Solution context: ${solutionContext}
+      Reference material: ${referenceDocuments.map((document) => `${document.name}: ${document.text}`).join('\n')}
       Tone: concise, credible, non-pushy, professional.
       Avoid: spammy language, exaggerated claims, scheduling links.
       Personalization mode: ${personalizationMode}
