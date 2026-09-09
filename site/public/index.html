@@ -1282,12 +1282,14 @@
         const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
         const preview = drafts.length ? drafts.map((draft) => `<p><strong>${draft.subject_line || 'Draft'}</strong><br>${(draft.body_text || '').slice(0, 90)}${(draft.body_text || '').length > 90 ? '...' : ''}</p>`).join('') : '<p>No drafted copy stored yet.</p>';
         const latestJob = Array.isArray(campaign.send_jobs) && campaign.send_jobs.length ? campaign.send_jobs[0] : null;
+        const assignedLeadCount = Array.isArray(campaign.campaign_leads) ? campaign.campaign_leads.length : 0;
 
         return `
           <article class="mini-campaign">
             <h3>${(campaign.name || 'Untitled campaign').replace(/</g, '&lt;')}</h3>
             <p>${(campaign.objective || 'No objective set.').replace(/</g, '&lt;')}</p>
             <p><strong>Segment:</strong> ${(campaign.target_segment || 'N/A').replace(/</g, '&lt;')}</p>
+            <p><strong>Assigned leads:</strong> ${assignedLeadCount}</p>
             <div class="tag">${(campaign.status || 'draft')}</div>
             ${preview}
             <p><strong>Launch:</strong> ${latestJob ? `${latestJob.platform} / ${latestJob.status}` : 'Not prepared'}</p>
