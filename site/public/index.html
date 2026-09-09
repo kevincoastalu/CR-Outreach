@@ -6,23 +6,33 @@
   <title>CyRisk Outreach Dashboard</title>
   <style>
     :root {
-      --bg: #f4f7fb;
-      --panel: #ffffff;
-      --panel-soft: #f8fafc;
-      --border: #dfe6ee;
-      --text: #101828;
-      --muted: #4b5563;
-      --accent: #b61d38;
-      --accent-soft: #fef1f5;
-      --green: #0f766e;
-      --green-soft: #ecfdf5;
-      --amber: #b45309;
-      --amber-soft: #fff7ed;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-soft: #1d222b;
+      --border: #2a3140;
+      --text: #e8eaed;
+      --muted: #9aa3b2;
+      --accent: #e0455f;
+      --accent-soft: rgba(224, 69, 95, 0.16);
+      --green: #3dd6c6;
+      --green-soft: rgba(61, 214, 198, 0.14);
+      --amber: #f0b429;
+      --amber-soft: rgba(240, 180, 41, 0.14);
+      --input-bg: #12151b;
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      --danger-bg: rgba(232, 88, 88, 0.12);
+      --danger-border: rgba(232, 88, 88, 0.35);
+      --danger-text: #f07178;
+      --chip-review-bg: rgba(240, 180, 41, 0.14);
+      --chip-review-text: #f0b429;
+      --chip-review-border: rgba(240, 180, 41, 0.35);
+      --chip-assigned-bg: rgba(96, 165, 250, 0.14);
+      --chip-assigned-text: #93c5fd;
+      --chip-assigned-border: rgba(96, 165, 250, 0.35);
     }
 
     * { box-sizing: border-box; }
-    html, body { margin: 0; background: var(--bg); font-family: Arial, sans-serif; color: var(--text); }
+    html, body { margin: 0; background: var(--bg); font-family: Arial, sans-serif; color: var(--text); color-scheme: dark; }
     body { padding: 30px; }
 
     .shell {
@@ -87,7 +97,7 @@
     .status-pill {
       background: var(--green-soft);
       color: var(--green);
-      border: 1px solid rgba(15, 118, 110, 0.2);
+      border: 1px solid rgba(61, 214, 198, 0.35);
       padding: 8px 12px;
       border-radius: 999px;
       font-size: 12px;
@@ -101,6 +111,124 @@
       grid-template-columns: repeat(4, minmax(180px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
+    }
+
+    .workflow-progress {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 24px;
+      padding: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .workflow-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel-soft);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .workflow-step .step-num {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .workflow-step.is-complete {
+      border-color: rgba(61, 214, 198, 0.35);
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .workflow-step.is-complete .step-num {
+      background: var(--green);
+      border-color: var(--green);
+      color: white;
+    }
+
+    .workflow-step.is-current {
+      border-color: rgba(224, 69, 95, 0.4);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .workflow-step.is-current .step-num {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .step-label {
+      display: inline-block;
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .section-intro {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .get-leads-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .launch-checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 16px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .launch-checklist li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel-soft);
+      font-size: 14px;
+    }
+
+    .launch-checklist li.is-ready {
+      border-color: rgba(15, 118, 110, 0.25);
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .launch-checklist li.is-blocked {
+      border-color: rgba(180, 83, 9, 0.25);
+      background: var(--amber-soft);
+      color: var(--amber);
     }
 
     .card {
@@ -128,28 +256,21 @@
       margin: 0;
     }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 24px;
-      margin-bottom: 24px;
-    }
-
     .panel {
       padding: 20px;
     }
 
     .panel h2 {
-      margin: 0 0 16px;
+      margin: 0 0 8px;
       font-size: 20px;
     }
 
     .upload-box {
-      border: 1.5px dashed #b7c7d8;
+      border: 1.5px dashed #3d4658;
       background: var(--panel-soft);
       padding: 20px;
       border-radius: 12px;
-      margin-bottom: 18px;
+      margin-bottom: 0;
       text-align: center;
     }
 
@@ -177,13 +298,13 @@
       padding: 10px 11px;
       border: 1px solid var(--border);
       border-radius: 9px;
-      background: white;
+      background: var(--input-bg);
       color: var(--text);
       font-size: 14px;
     }
 
     .lead-form-grid input:focus {
-      outline: 2px solid rgba(182, 29, 56, 0.2);
+      outline: 2px solid rgba(224, 69, 95, 0.35);
       border-color: var(--accent);
     }
 
@@ -192,7 +313,7 @@
       padding: 10px 12px;
       border-radius: 10px;
       border: 1px solid var(--border);
-      background: white;
+      background: var(--input-bg);
       font-size: 14px;
     }
 
@@ -211,16 +332,16 @@
       font-weight: 700;
       cursor: pointer;
       transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-      box-shadow: 0 2px 0 rgba(15, 23, 42, 0.12);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
     }
 
     button:hover:not(:disabled) {
-      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.12);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
       transform: translateY(-1px);
     }
 
     button:active:not(:disabled) {
-      box-shadow: 0 0 0 rgba(15, 23, 42, 0.12);
+      box-shadow: 0 0 0 rgba(0, 0, 0, 0.35);
       transform: translateY(2px) scale(0.98);
     }
 
@@ -367,10 +488,10 @@
       width: 17px;
       height: 17px;
       margin-left: 5px;
-      border: 1px solid #9aaabd;
+      border: 1px solid #6b7585;
       border-radius: 50%;
-      background: white;
-      color: #536273;
+      background: var(--panel-soft);
+      color: var(--muted);
       font-size: 11px;
       font-weight: 700;
       line-height: 1;
@@ -387,7 +508,7 @@
       width: 230px;
       padding: 9px 10px;
       border-radius: 8px;
-      background: #17212f;
+      background: #0b0d11;
       color: white;
       font-size: 12px;
       font-weight: 400;
@@ -499,7 +620,7 @@
       padding: 10px 11px;
       border: 1px solid var(--border);
       border-radius: 9px;
-      background: white;
+      background: var(--input-bg);
       color: var(--text);
       font-size: 14px;
     }
@@ -556,9 +677,9 @@
 
     .status-chip.needs_review,
     .status-chip.needs-review {
-      background: #fff4e5;
-      color: #9a6700;
-      border-color: #f0d7a8;
+      background: var(--chip-review-bg);
+      color: var(--chip-review-text);
+      border-color: var(--chip-review-border);
     }
 
     .status-chip.new {
@@ -569,9 +690,9 @@
 
     .status-chip.queued,
     .status-chip.assigned {
-      background: #eef4ff;
-      color: #274690;
-      border-color: #c9d7f5;
+      background: var(--chip-assigned-bg);
+      color: var(--chip-assigned-text);
+      border-color: var(--chip-assigned-border);
     }
 
     .mini-campaign-actions {
@@ -582,13 +703,13 @@
     }
 
     .danger-btn {
-      border-color: #f0c2c2;
-      color: #9b1c1c;
-      background: #fff5f5;
+      border-color: var(--danger-border);
+      color: var(--danger-text);
+      background: var(--danger-bg);
     }
 
     .danger-btn:hover {
-      background: #ffe8e8;
+      background: rgba(232, 88, 88, 0.2);
     }
 
     @media (max-width: 900px) {
@@ -682,7 +803,7 @@
       border: 1px solid var(--border);
       font-size: 14px;
       color: var(--text);
-      background: white;
+      background: var(--input-bg);
     }
 
     .field textarea {
@@ -741,7 +862,7 @@
       padding: 10px 11px;
       border: 1px solid var(--border);
       border-radius: 9px;
-      background: white;
+      background: var(--input-bg);
       color: var(--text);
       font: inherit;
       line-height: 1.5;
@@ -764,7 +885,7 @@
     }
 
     @media (max-width: 900px) {
-      .summary-grid, .campaign-grid, .layout { grid-template-columns: 1fr; }
+      .summary-grid, .get-leads-grid, .workflow-progress, .campaign-builder { grid-template-columns: 1fr; }
       body { padding: 16px; }
       .topbar { flex-direction: column; align-items: flex-start; }
     }
@@ -777,242 +898,126 @@
         <span class="brand-mark"></span>
         CyRisk Outreach
       </div>
-      <nav class="hub-nav" aria-label="Workspace hubs">
-        <a href="#leads-hub">Leads</a>
-        <a href="#campaigns-hub">Campaigns</a>
-        <a href="#launch-queue">Launch queue</a>
-        <a href="#apollo-discovery">Apollo discovery</a>
+      <nav class="hub-nav" aria-label="Workflow steps">
+        <a href="#get-leads">1. Get leads</a>
+        <a href="#leads-hub">2. Review leads</a>
+        <a href="#campaigns-hub">3. Write campaign</a>
+        <a href="#prepare-launch">4. Launch</a>
       </nav>
-      <div class="status-pill">Ops Dashboard</div>
+      <div class="status-pill">Sales workspace</div>
     </header>
+
+    <nav class="workflow-progress" aria-label="Campaign progress">
+      <a class="workflow-step" id="progressStep1" href="#get-leads"><span class="step-num">1</span><span>Get leads</span></a>
+      <a class="workflow-step" id="progressStep2" href="#leads-hub"><span class="step-num">2</span><span>Review leads</span></a>
+      <a class="workflow-step" id="progressStep3" href="#campaigns-hub"><span class="step-num">3</span><span>Write campaign</span></a>
+      <a class="workflow-step" id="progressStep4" href="#prepare-launch"><span class="step-num">4</span><span>Prepare launch</span></a>
+    </nav>
 
     <section class="summary-grid">
       <div class="card metric">
-        <div class="metric-label">Loaded leads</div>
+        <div class="metric-label">Total leads</div>
         <p id="leadCount" class="metric-value">0</p>
       </div>
       <div class="card metric">
-        <div class="metric-label">Campaign steps</div>
-        <p class="metric-value">3</p>
+        <div class="metric-label">Needs review</div>
+        <p id="needsReviewCount" class="metric-value">0</p>
       </div>
       <div class="card metric">
-        <div class="metric-label">Ready to send</div>
-        <p id="readyCount" class="metric-value">0</p>
+        <div class="metric-label">Campaigns ready</div>
+        <p id="campaignsReadyCount" class="metric-value">0</p>
       </div>
       <div class="card metric">
-        <div class="metric-label">Apollo fields</div>
-        <p class="metric-value">8</p>
+        <div class="metric-label">Launches prepared</div>
+        <p id="launchesPreparedCount" class="metric-value">0</p>
       </div>
     </section>
 
-    <section class="layout">
-      <div class="card panel">
-        <h2>Lead import</h2>
-        <div class="upload-box">
-          <input id="csvInput" type="file" accept=".csv,text/csv" />
-          <form id="manualLeadForm" class="manual-lead-form">
-            <h3>Add a lead manually</h3>
-            <div class="lead-form-grid">
-              <input id="manualFirstName" name="first_name" type="text" placeholder="First name" required>
-              <input id="manualLastName" name="last_name" type="text" placeholder="Last name">
-              <input id="manualEmail" name="email" type="email" placeholder="Email address" required>
-              <input id="manualTitle" name="title" type="text" placeholder="Title">
-              <input id="manualFirmName" name="firm_name" type="text" placeholder="Firm name" required>
-              <input id="manualWebsite" name="website" type="url" placeholder="Website">
-              <input id="manualCity" name="city" type="text" placeholder="City">
-              <input id="manualState" name="state" type="text" placeholder="State">
+    <section id="get-leads" class="card panel" style="margin-bottom:24px;">
+      <span class="step-label">Step 1</span>
+      <h2>Get leads</h2>
+      <p class="section-intro">Find prospects in Apollo, or upload / add your own. Nothing is emailed from this step.</p>
+      <div class="get-leads-grid">
+        <div>
+          <h3 style="margin:0 0 10px; font-size:16px;">Find leads in Apollo</h3>
+          <p class="muted" style="margin:0 0 14px;">Search → keep the good ones → add emails if needed → import into your lead list.</p>
+          <div class="campaign-builder" style="grid-template-columns:1fr;">
+            <div>
+              <div class="field">
+                <label for="apolloTitles">Job titles <span class="info-tip" tabindex="0" role="img" aria-label="About job title filters" data-tip="Use titles such as Partner, Attorney, or Counsel. Separate multiple titles with commas.">i</span></label>
+                <input id="apolloTitles" type="text" value="Partner, Attorney, Counsel" placeholder="Partner, Attorney, Counsel" />
+              </div>
+              <div class="field">
+                <label for="apolloKeywords">Firm keywords <span class="info-tip" tabindex="0" role="img" aria-label="About firm keyword filters" data-tip="Use terms that describe the practice area, such as privacy law, CIPA, VPPA, or data security.">i</span></label>
+                <input id="apolloKeywords" type="text" value="privacy law, data security, CIPA, VPPA" placeholder="privacy law, data security, CIPA" />
+              </div>
+              <div class="field">
+                <label for="apolloResultCount">Results to review</label>
+                <select id="apolloResultCount">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="apolloCompanyLimit">Max people per company</label>
+                <select id="apolloCompanyLimit">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                </select>
+              </div>
+              <div class="action-row">
+                <button id="searchApolloBtn" class="primary-btn" type="button">Search Apollo</button>
+                <button id="holdApolloBtn" class="secondary-btn" type="button">Keep selected</button>
+              </div>
             </div>
+          </div>
+          <div id="apolloStatus" class="status-message" aria-live="polite"></div>
+          <div id="apolloResults" class="apollo-results"></div>
+          <div class="apollo-queue">
+            <h3>Saved for import <span id="apolloQueueCount" class="muted">0</span> <span class="info-tip" tabindex="0" role="img" aria-label="About saved prospects" data-tip="Keep good prospects here while you search again. Add emails when ready, then import them into your lead list.">i</span></h3>
             <div class="action-row">
-              <button id="addLeadBtn" class="secondary-btn" type="submit">Add lead</button>
+              <button id="enrichApolloBtn" class="secondary-btn" type="button">Add emails</button>
+              <button id="importApolloBtn" class="primary-btn" type="button">Import into leads</button>
+              <button id="clearApolloQueueBtn" class="secondary-btn" type="button">Clear list</button>
             </div>
-          </form>
-          <div class="action-row">
-            <button id="saveLeadsBtn" class="primary-btn" type="button">Save leads</button>
-            <button id="generateDraftsBtn" class="secondary-btn" type="button">Generate drafts</button>
-          </div>
-          <div id="statusMessage" class="status-message" aria-live="polite"></div>
-        </div>
-        <ul class="checklist">
-          <li><span class="dot"></span> Check sender mailbox before launch</li>
-          <li><span class="dot"></span> Confirm sending mailbox is connected</li>
-          <li><span class="dot"></span> Validate lead fields before send</li>
-          <li><span class="dot warn"></span> Review final copy and sequence timing</li>
-        </ul>
-      </div>
-
-      <div class="card panel" id="campaign-control">
-        <h2>Campaign control <span class="info-tip" tabindex="0" role="img" aria-label="About campaign controls" data-tip="These guardrails belong to this campaign. Change them when the audience, offer, or personalization strategy changes.">i</span></h2>
-        <ul class="checklist">
-          <li><span class="dot"></span> <strong>ICP:</strong> <span id="controlIcp">Privacy litigators</span></li>
-          <li><span class="dot"></span> <strong>CTA:</strong> <span id="controlCta">Reply with a domain or matter of interest</span></li>
-          <li><span class="dot"></span> <strong>Personalization:</strong> <span id="controlPersonalization">Email only</span></li>
-          <li><span class="dot"></span> <strong>Merge fields:</strong> first_name, firm_name <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo merge fields" data-tip="These placeholders are filled by Apollo at send time from each contact's mapped fields.">i</span></li>
-        </ul>
-      </div>
-    </section>
-
-    <section id="apollo-discovery" class="card panel" style="margin-bottom:24px;">
-      <h2>Find leads in Apollo <span class="info-tip" tabindex="0" role="img" aria-label="About Apollo lead discovery" data-tip="Search Apollo for prospects first. Results stay here until you select and import them.">i</span></h2>
-      <p class="muted">Search Apollo for relevant prospects, review the results, then import selected contacts as leads needing review. Nothing is enrolled or sent from this search.</p>
-      <div class="campaign-builder">
-        <div>
-          <div class="field">
-            <label for="apolloTitles">Job titles <span class="info-tip" tabindex="0" role="img" aria-label="About job title filters" data-tip="Use titles such as Partner, Attorney, or Counsel. Separate multiple titles with commas.">i</span></label>
-            <input id="apolloTitles" type="text" value="Partner, Attorney, Counsel" placeholder="Partner, Attorney, Counsel" />
-          </div>
-          <div class="field">
-            <label for="apolloKeywords">Firm keywords <span class="info-tip" tabindex="0" role="img" aria-label="About firm keyword filters" data-tip="Use terms that describe the practice area, such as privacy law, CIPA, VPPA, or data security.">i</span></label>
-            <input id="apolloKeywords" type="text" value="privacy law, data security, CIPA, VPPA" placeholder="privacy law, data security, CIPA" />
+            <div id="apolloQueue" class="apollo-results"></div>
           </div>
         </div>
         <div>
-          <div class="field">
-            <label for="apolloResultCount">Results to review</label>
-            <select id="apolloResultCount">
-              <option value="10">10</option>
-              <option value="25">25</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="apolloCompanyLimit">Max per company</label>
-            <select id="apolloCompanyLimit">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-            </select>
-          </div>
-          <div class="action-row">
-            <button id="searchApolloBtn" class="primary-btn" type="button">Search Apollo</button>
-            <button id="holdApolloBtn" class="secondary-btn" type="button">Hold selected</button>
-          </div>
-        </div>
-      </div>
-      <div id="apolloStatus" class="status-message" aria-live="polite"></div>
-      <div id="apolloResults" class="apollo-results"></div>
-      <div class="apollo-queue">
-        <h3>Held prospects <span id="apolloQueueCount" class="muted">0</span> <span class="info-tip" tabindex="0" role="img" aria-label="About held prospects" data-tip="Hold qualified prospects here while you run more Apollo searches. Enrichment and import happen only when you are ready.">i</span></h3>
-        <div class="action-row">
-          <button id="enrichApolloBtn" class="secondary-btn" type="button">Enrich held</button>
-          <button id="importApolloBtn" class="secondary-btn" type="button">Import held</button>
-          <button id="clearApolloQueueBtn" class="secondary-btn" type="button">Clear held queue</button>
-        </div>
-        <div id="apolloQueue" class="apollo-results"></div>
-      </div>
-    </section>
-
-    <section class="campaign-grid">
-      <article class="campaign-card">
-        <span class="label">Step 1</span>
-        <h3>Day 0</h3>
-        <p class="subject">Signal + open offer</p>
-        <p class="preview">“We scan targeted domains and surface the technical evidence behind privacy litigation theories. Send us a URL you’re curious about and we’ll walk you through what it reveals.”</p>
-      </article>
-
-      <article class="campaign-card">
-        <span class="label">Step 2</span>
-        <h3>Day 4</h3>
-        <p class="subject">Use-case follow-up</p>
-        <p class="preview">“If you’re evaluating a client, matter, or due-diligence target, we can show the exact tracking patterns that matter in CIPA/VPPA/CPRA cases.”</p>
-      </article>
-
-      <article class="campaign-card">
-        <span class="label">Step 3</span>
-        <h3>Day 8</h3>
-        <p class="subject">Light final nudge</p>
-        <p class="preview">“If it’s helpful, send one domain and we’ll share a short summary of what we find. No deck, no pre-scan of your firm — just the relevant evidence.”</p>
-      </article>
-    </section>
-
-    <section id="campaigns-hub" class="card panel" style="margin-bottom:24px;">
-      <div class="hub-heading"><h2>Campaigns Hub</h2><span class="info-tip" tabindex="0" role="img" aria-label="About the campaigns hub" data-tip="Review every campaign, its audience, copy, assigned leads, and launch state from one place.">i</span></div>
-      <div class="campaign-builder">
-        <div>
-          <div class="field">
-            <label for="campaignName">Campaign name</label>
-            <input id="campaignName" type="text" value="CyRisk Privacy Law Outreach" />
-          </div>
-          <div class="field">
-            <label for="campaignSegment">Audience segment</label>
-            <select id="campaignSegment">
-              <option>Privacy litigators</option>
-              <option>Privacy compliance counsel</option>
-              <option>Data security / privacy practice groups</option>
-              <option>All privacy-focused law firms</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="campaignObjective">Objective <span class="info-tip" tabindex="0" role="img" aria-label="About campaign objective" data-tip="Tell the AI what this outreach should achieve. This is the primary prompt for subject lines and email bodies.">i</span></label>
-            <textarea id="campaignObjective" placeholder="What should this outreach accomplish? e.g. get replies from firms evaluating CIPA/VPPA technical evidence.">Generate qualified replies from privacy-focused law firms interested in technical evidence behind CIPA, VPPA, and CCPA/CPRA claims.</textarea>
-          </div>
-          <div class="field">
-            <label for="campaignCta">Call to action</label>
-            <textarea id="campaignCta">Reply with a domain or matter of interest.</textarea>
-          </div>
-          <div class="field">
-            <label for="solutionContext">Solution context <span class="info-tip" tabindex="0" role="img" aria-label="About solution context" data-tip="Describe the product, customer outcome, differentiators, proof points, and constraints the AI should use when writing this campaign.">i</span></label>
-            <textarea id="solutionContext" placeholder="What are you positioning? Include the problem, solution, differentiators, proof points, and language to avoid.">CyRisk Insight Engine helps teams identify technical privacy and security risk in a target website. Position the practical evidence, not a generic software pitch.</textarea>
-          </div>
-          <div class="field">
-            <label for="campaignDocuments">Reference documents <span class="info-tip" tabindex="0" role="img" aria-label="About reference documents" data-tip="Upload text, Markdown, JSON, or CSV reference material. The contents are sent to the AI only for this campaign brief.">i</span></label>
-            <input id="campaignDocuments" type="file" accept=".txt,.md,.json,.csv,text/plain,text/markdown,application/json,text/csv" multiple>
-            <span id="documentList" class="muted">No reference documents added.</span>
-          </div>
-          <div class="action-row">
-            <button id="newCampaignBtn" class="secondary-btn" type="button">New campaign</button>
-            <button id="saveCampaignBtn" class="primary-btn" type="button">Save campaign</button>
-            <button id="generateCampaignBtn" class="secondary-btn" type="button">Generate AI copy</button>
-          </div>
-        </div>
-        <div>
-          <div class="field">
-            <label for="campaignStatus">Current status <span class="info-tip" tabindex="0" role="img" aria-label="About campaign status" data-tip="Drafts can be edited. Approved campaigns create a paused launch job and still require final provider activation.">i</span></label>
-            <input id="campaignStatus" type="text" value="Draft" readonly />
-          </div>
-          <div class="field">
-            <label for="sequenceSummary">Sequence</label>
-            <textarea id="sequenceSummary" readonly>Day 0 / Day 4 / Day 8: capability angle, use-case follow-up, final light nudge.</textarea>
-          </div>
-          <div class="field">
-            <label for="launchPlatform">Launch platform</label>
-            <select id="launchPlatform">
-              <option value="apollo">Apollo</option>
-              <option value="instantly">Instantly</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="senderMailbox">Sending mailbox</label>
-            <input id="senderMailbox" type="email" placeholder="sender@company.com" />
-          </div>
-          <div class="field">
-            <label for="personalizationMode">Personalization mode</label>
-            <select id="personalizationMode">
-              <option value="Email only" selected>Email only</option>
-              <option value="Merge fields only">Merge fields only</option>
-              <option value="Generic campaign copy">Generic campaign copy</option>
-              <option value="Landing page per lead">Landing page per lead (future)</option>
-            </select>
-          </div>
-          <div class="action-row">
-            <button id="prepareLaunchBtn" class="secondary-btn" type="button">Approve & prepare launch <span class="info-tip" tabindex="0" role="img" aria-label="About preparing a launch" data-tip="This validates the campaign and creates a paused Apollo or Instantly job. It does not send email yet.">i</span></button>
+          <h3 style="margin:0 0 10px; font-size:16px;">Or add your own</h3>
+          <p class="muted" style="margin:0 0 14px;">Upload a CSV or enter one person at a time, then save them to your lead list.</p>
+          <div class="upload-box">
+            <input id="csvInput" type="file" accept=".csv,text/csv" />
+            <form id="manualLeadForm" class="manual-lead-form">
+              <h3>Add a lead manually</h3>
+              <div class="lead-form-grid">
+                <input id="manualFirstName" name="first_name" type="text" placeholder="First name" required>
+                <input id="manualLastName" name="last_name" type="text" placeholder="Last name">
+                <input id="manualEmail" name="email" type="email" placeholder="Email address" required>
+                <input id="manualTitle" name="title" type="text" placeholder="Title">
+                <input id="manualFirmName" name="firm_name" type="text" placeholder="Firm name" required>
+                <input id="manualWebsite" name="website" type="url" placeholder="Website">
+                <input id="manualCity" name="city" type="text" placeholder="City">
+                <input id="manualState" name="state" type="text" placeholder="State">
+              </div>
+              <div class="action-row">
+                <button id="addLeadBtn" class="secondary-btn" type="submit">Add lead</button>
+              </div>
+            </form>
+            <div class="action-row">
+              <button id="saveLeadsBtn" class="primary-btn" type="button">Save leads</button>
+            </div>
+            <div id="statusMessage" class="status-message" aria-live="polite"></div>
           </div>
         </div>
       </div>
-
-      <div id="draftGrid" class="draft-grid"></div>
-
-      <div>
-        <h3 style="margin:16px 0 10px; font-size:16px;">Saved campaigns</h3>
-        <div id="campaignList" class="campaign-list"></div>
-      </div>
-    </section>
-
-    <section id="launch-queue" class="card panel" style="margin-bottom:24px;">
-      <div class="hub-heading"><h2>Launch Queue</h2><span class="info-tip" tabindex="0" role="img" aria-label="About the launch queue" data-tip="Prepared Apollo or Instantly jobs appear here before provider activation. This is your final operational checkpoint.">i</span></div>
-      <div id="launchList" class="launch-list"><p class="muted">No launch jobs prepared yet.</p></div>
     </section>
 
     <section id="leads-hub" class="card panel" style="margin-bottom:24px;">
-      <div class="hub-heading"><h2>Leads Hub</h2><span class="info-tip" tabindex="0" role="img" aria-label="About the leads hub" data-tip="Search, filter, and sort saved leads so you can find the right prospects and assign them to a campaign.">i</span></div>
+      <span class="step-label">Step 2</span>
+      <div class="hub-heading"><h2>Review &amp; select leads</h2><span class="info-tip" tabindex="0" role="img" aria-label="About reviewing leads" data-tip="Search, filter, and sort your leads, then assign the right people to a campaign.">i</span></div>
+      <p class="section-intro">Find the prospects you want, select them, choose a campaign, and assign. Save leads in Step 1 before assigning.</p>
       <div class="lead-toolbar">
         <div class="field">
           <label for="leadHubFilter">Search</label>
@@ -1085,25 +1090,120 @@
           </thead>
           <tbody id="leadTableBody">
             <tr>
-              <td colspan="11" class="muted">No lead CSV uploaded yet.</td>
+              <td colspan="11" class="muted">No leads yet. Import from Apollo or add your own in Step 1.</td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
 
+    <section id="campaigns-hub" class="card panel" style="margin-bottom:24px;">
+      <span class="step-label">Step 3</span>
+      <div class="hub-heading"><h2>Write campaign</h2><span class="info-tip" tabindex="0" role="img" aria-label="About writing a campaign" data-tip="Describe what you want the outreach to achieve, generate draft emails, edit them, then save the campaign.">i</span></div>
+      <p class="section-intro">Tell the AI what you want, generate three email options, edit anything that needs a human touch, then save. Sequence timing is Day 0 / Day 4 / Day 8.</p>
+      <div class="campaign-builder">
+        <div>
+          <div class="field">
+            <label for="campaignName">Campaign name</label>
+            <input id="campaignName" type="text" value="CyRisk Privacy Law Outreach" />
+          </div>
+          <div class="field">
+            <label for="campaignSegment">Audience</label>
+            <select id="campaignSegment">
+              <option>Privacy litigators</option>
+              <option>Privacy compliance counsel</option>
+              <option>Data security / privacy practice groups</option>
+              <option>All privacy-focused law firms</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="campaignObjective">Objective <span class="info-tip" tabindex="0" role="img" aria-label="About campaign objective" data-tip="Tell the AI what this outreach should achieve. This is the primary prompt for subject lines and email bodies.">i</span></label>
+            <textarea id="campaignObjective" placeholder="What should this outreach accomplish? e.g. get replies from firms evaluating CIPA/VPPA technical evidence.">Generate qualified replies from privacy-focused law firms interested in technical evidence behind CIPA, VPPA, and CCPA/CPRA claims.</textarea>
+          </div>
+          <div class="field">
+            <label for="campaignCta">Call to action</label>
+            <textarea id="campaignCta">Reply with a domain or matter of interest.</textarea>
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label for="solutionContext">What you are selling <span class="info-tip" tabindex="0" role="img" aria-label="About solution context" data-tip="Describe the product, customer outcome, differentiators, proof points, and language to avoid.">i</span></label>
+            <textarea id="solutionContext" placeholder="What are you positioning? Include the problem, solution, differentiators, proof points, and language to avoid.">CyRisk Insight Engine helps teams identify technical privacy and security risk in a target website. Position the practical evidence, not a generic software pitch.</textarea>
+          </div>
+          <div class="field">
+            <label for="campaignDocuments">Reference documents <span class="info-tip" tabindex="0" role="img" aria-label="About reference documents" data-tip="Upload text, Markdown, JSON, or CSV reference material. The contents are sent to the AI only for this campaign brief.">i</span></label>
+            <input id="campaignDocuments" type="file" accept=".txt,.md,.json,.csv,text/plain,text/markdown,application/json,text/csv" multiple>
+            <span id="documentList" class="muted">No reference documents added.</span>
+          </div>
+          <div class="field">
+            <label for="campaignStatus">Campaign status</label>
+            <input id="campaignStatus" type="text" value="Draft" readonly />
+          </div>
+          <input id="personalizationMode" type="hidden" value="Email only" />
+          <div class="action-row">
+            <button id="generateCampaignBtn" class="primary-btn" type="button">Generate AI copy</button>
+            <button id="saveCampaignBtn" class="secondary-btn" type="button">Save campaign</button>
+            <button id="newCampaignBtn" class="secondary-btn" type="button">New campaign</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="draftGrid" class="draft-grid"></div>
+
+      <div>
+        <h3 style="margin:16px 0 10px; font-size:16px;">Saved campaigns</h3>
+        <div id="campaignList" class="campaign-list"></div>
+      </div>
+    </section>
+
+    <section id="prepare-launch" class="card panel" style="margin-bottom:24px;">
+      <span class="step-label">Step 4</span>
+      <div class="hub-heading"><h2>Prepare launch</h2><span class="info-tip" tabindex="0" role="img" aria-label="About preparing a launch" data-tip="This creates a paused job in Apollo or Instantly. It does not send email by itself.">i</span></div>
+      <p class="section-intro">Confirm the checklist below, choose where to send from, then prepare a paused launch. You still activate the send in Apollo or Instantly.</p>
+      <ul class="launch-checklist" id="launchChecklist">
+        <li id="launchCheckCampaign" class="is-blocked"><span class="dot warn"></span> Campaign saved</li>
+        <li id="launchCheckCopy" class="is-blocked"><span class="dot warn"></span> Three email variants ready</li>
+        <li id="launchCheckLeads" class="is-blocked"><span class="dot warn"></span> Leads assigned to this campaign</li>
+        <li id="launchCheckMailbox" class="is-blocked"><span class="dot warn"></span> Sending mailbox entered</li>
+      </ul>
+      <div class="campaign-builder">
+        <div>
+          <div class="field">
+            <label for="launchPlatform">Send with</label>
+            <select id="launchPlatform">
+              <option value="apollo">Apollo</option>
+              <option value="instantly">Instantly</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="senderMailbox">Sending mailbox</label>
+            <input id="senderMailbox" type="email" placeholder="sender@company.com" />
+          </div>
+          <div class="action-row">
+            <button id="prepareLaunchBtn" class="primary-btn" type="button">Prepare launch (does not send)</button>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin:0 0 10px; font-size:16px;">Launch queue</h3>
+          <p class="muted" style="margin:0 0 12px;">Prepared jobs show here. Activate them in your email provider when you are ready to send.</p>
+          <div id="launchList" class="launch-list"><p class="muted">No launch jobs prepared yet.</p></div>
+        </div>
+      </div>
+    </section>
+
     <div class="footer">
-      Apollo merge fields: first_name, last_name, email, title, firm_name, city, state, page_url
+      Tip: first_name and firm_name are filled in automatically when emails are sent.
     </div>
   </div>
 
   <script>
     const leadCountEl = document.getElementById('leadCount');
-    const readyCountEl = document.getElementById('readyCount');
+    const needsReviewCountEl = document.getElementById('needsReviewCount');
+    const campaignsReadyCountEl = document.getElementById('campaignsReadyCount');
+    const launchesPreparedCountEl = document.getElementById('launchesPreparedCount');
     const leadTableBody = document.getElementById('leadTableBody');
     const csvInput = document.getElementById('csvInput');
     const saveLeadsBtn = document.getElementById('saveLeadsBtn');
-    const generateDraftsBtn = document.getElementById('generateDraftsBtn');
     const manualLeadForm = document.getElementById('manualLeadForm');
     const statusMessage = document.getElementById('statusMessage');
     const draftGrid = document.getElementById('draftGrid');
@@ -1152,9 +1252,14 @@
     const leadNextPageBtn = document.getElementById('leadNextPageBtn');
     const leadPageLabel = document.getElementById('leadPageLabel');
     const launchList = document.getElementById('launchList');
-    const controlIcp = document.getElementById('controlIcp');
-    const controlCta = document.getElementById('controlCta');
-    const controlPersonalization = document.getElementById('controlPersonalization');
+    const launchCheckCampaign = document.getElementById('launchCheckCampaign');
+    const launchCheckCopy = document.getElementById('launchCheckCopy');
+    const launchCheckLeads = document.getElementById('launchCheckLeads');
+    const launchCheckMailbox = document.getElementById('launchCheckMailbox');
+    const progressStep1 = document.getElementById('progressStep1');
+    const progressStep2 = document.getElementById('progressStep2');
+    const progressStep3 = document.getElementById('progressStep3');
+    const progressStep4 = document.getElementById('progressStep4');
     const addLeadBtn = document.getElementById('addLeadBtn');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
@@ -1183,10 +1288,68 @@
       if (type) apolloStatus.classList.add(type);
     }
 
-    function updateCampaignControls() {
-      controlIcp.textContent = campaignSegmentInput.value || 'Not specified';
-      controlCta.textContent = campaignCtaInput.value || 'Not specified';
-      controlPersonalization.textContent = personalizationModeInput.value || 'Not specified';
+    function countDraftVariants(drafts = currentDrafts) {
+      return ['subject1', 'subject2', 'subject3'].filter((key) => drafts[key] && drafts[key.replace('subject', 'body')]).length;
+    }
+
+    function campaignHasAssignedLeads(campaignId = currentCampaignId) {
+      if (!campaignId) return false;
+      const campaign = savedCampaigns.find((item) => item.id === campaignId);
+      if (campaign && Array.isArray(campaign.campaign_leads) && campaign.campaign_leads.length) return true;
+      return currentLeads.some((lead) => (lead.campaign_leads || []).some((membership) => membership.campaign_id === campaignId));
+    }
+
+    function setChecklistItem(element, ready, readyLabel, blockedLabel) {
+      if (!element) return;
+      element.className = ready ? 'is-ready' : 'is-blocked';
+      element.innerHTML = `<span class="dot${ready ? '' : ' warn'}"></span> ${ready ? readyLabel : blockedLabel}`;
+    }
+
+    function updateLaunchChecklist() {
+      const hasCampaign = Boolean(currentCampaignId);
+      const hasCopy = countDraftVariants() === 3;
+      const hasLeads = campaignHasAssignedLeads();
+      const hasMailbox = Boolean(senderMailboxInput.value.trim());
+
+      setChecklistItem(launchCheckCampaign, hasCampaign, 'Campaign saved', 'Save the campaign in Step 3 first');
+      setChecklistItem(launchCheckCopy, hasCopy, 'Three email variants ready', 'Generate and review three email variants');
+      setChecklistItem(launchCheckLeads, hasLeads, 'Leads assigned to this campaign', 'Assign leads to this campaign in Step 2');
+      setChecklistItem(launchCheckMailbox, hasMailbox, 'Sending mailbox entered', 'Enter the sending mailbox');
+    }
+
+    function updateWorkflowProgress() {
+      const hasLeads = currentLeads.length > 0;
+      const hasReviewedSelection = currentLeads.some((lead) => (lead.campaign_leads || []).length > 0) || selectedLeadEmails.size > 0;
+      const hasCampaignReady = Boolean(currentCampaignId) && countDraftVariants() === 3;
+      const hasLaunch = savedCampaigns.some((campaign) => Array.isArray(campaign.send_jobs) && campaign.send_jobs.length > 0);
+
+      const steps = [
+        { el: progressStep1, complete: hasLeads },
+        { el: progressStep2, complete: hasReviewedSelection },
+        { el: progressStep3, complete: hasCampaignReady },
+        { el: progressStep4, complete: hasLaunch }
+      ];
+
+      let currentSet = false;
+      steps.forEach((step) => {
+        if (!step.el) return;
+        step.el.classList.remove('is-complete', 'is-current');
+        if (step.complete) {
+          step.el.classList.add('is-complete');
+        } else if (!currentSet) {
+          step.el.classList.add('is-current');
+          currentSet = true;
+        }
+      });
+      if (!currentSet && steps[3]?.el) steps[3].el.classList.add('is-current');
+
+      needsReviewCountEl.textContent = String(currentLeads.filter((lead) => String(lead.status || '').toLowerCase() === 'needs_review').length);
+      campaignsReadyCountEl.textContent = String(savedCampaigns.filter((campaign) => {
+        const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts : [];
+        return drafts.length >= 3;
+      }).length);
+      launchesPreparedCountEl.textContent = String(savedCampaigns.reduce((total, campaign) => total + (Array.isArray(campaign.send_jobs) ? campaign.send_jobs.length : 0), 0));
+      updateLaunchChecklist();
     }
 
     async function withButtonBusy(button, action, busyLabel) {
@@ -1268,7 +1431,7 @@
         apolloSearchResults = (Array.isArray(result.people) ? result.people : [])
           .filter((lead) => lead.apollo_contact_id && !heldIds.has(lead.apollo_contact_id));
         renderApolloResults();
-        setApolloStatus(`${apolloSearchResults.length} new Apollo prospects from page ${apolloSearchPage}. Select prospects and click Hold selected to keep them while you search again.`, 'success');
+        setApolloStatus(`${apolloSearchResults.length} new prospects found. Select the good ones and click Keep selected.`, 'success');
       } catch (error) {
         setApolloStatus(error.message || 'Apollo search failed.', 'error');
       }
@@ -1293,17 +1456,17 @@
       const added = selected.filter((lead) => lead.apollo_contact_id && !existingIds.has(lead.apollo_contact_id));
       apolloHeldLeads = [...apolloHeldLeads, ...added];
       persistApolloQueue();
-      setApolloStatus(`Held ${added.length} new prospect${added.length === 1 ? '' : 's'}. You can search Apollo again before enriching.`, 'success');
+      setApolloStatus(`Kept ${added.length} prospect${added.length === 1 ? '' : 's'}. Search again anytime, then add emails and import.`, 'success');
     }
 
     async function importSelectedApolloLeads() {
       const selected = selectedHeldLeads();
       if (!selected.length) {
-        setApolloStatus('Hold at least one prospect before importing.', 'error');
+        setApolloStatus('Keep at least one prospect before importing.', 'error');
         return;
       }
 
-      setApolloStatus('Importing selected prospects for review...', '');
+      setApolloStatus('Importing prospects into your lead list...', '');
       try {
         const response = await fetch('/.netlify/functions/import-apollo-leads', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1316,7 +1479,7 @@
         const importedIds = new Set(selected.map((lead) => lead.apollo_contact_id));
         apolloHeldLeads = apolloHeldLeads.filter((lead) => !importedIds.has(lead.apollo_contact_id));
         persistApolloQueue();
-        setApolloStatus(`Imported ${result.imported} prospects for review${result.skipped ? `; skipped ${result.skipped}` : ''}.`, 'success');
+        setApolloStatus(`Imported ${result.imported} prospect${result.imported === 1 ? '' : 's'} for review${result.skipped ? `; skipped ${result.skipped}` : ''}. Continue in Step 2.`, 'success');
       } catch (error) {
         setApolloStatus(error.message || 'Apollo import failed.', 'error');
       }
@@ -1335,7 +1498,7 @@
         return;
       }
 
-      setApolloStatus('Enriching selected prospects. Apollo may charge credits for returned email data...', '');
+      setApolloStatus('Looking up emails. Apollo may use credits for returned email data...', '');
       try {
         const response = await fetch('/.netlify/functions/enrich-apollo-leads', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1349,9 +1512,9 @@
           if (match >= 0) apolloHeldLeads[match] = lead;
         });
         persistApolloQueue();
-        setApolloStatus(`Enriched ${result.enrichedCount} prospects${result.failedCount ? `; ${result.failedCount} did not return email data` : ''}.`, result.enrichedCount ? 'success' : 'error');
+        setApolloStatus(`Added emails for ${result.enrichedCount} prospect${result.enrichedCount === 1 ? '' : 's'}${result.failedCount ? `; ${result.failedCount} did not return email data` : ''}.`, result.enrichedCount ? 'success' : 'error');
       } catch (error) {
-        setApolloStatus(error.message || 'Apollo enrichment failed.', 'error');
+        setApolloStatus(error.message || 'Could not add emails.', 'error');
       }
     }
 
@@ -1505,20 +1668,18 @@
       const pageLeads = visibleLeads.slice(pageStart, pageStart + LEAD_PAGE_SIZE);
 
       if (!leads.length) {
-        leadTableBody.innerHTML = '<tr><td colspan="11" class="muted">No lead CSV uploaded yet.</td></tr>';
+        leadTableBody.innerHTML = '<tr><td colspan="11" class="muted">No leads yet. Import from Apollo or add your own in Step 1.</td></tr>';
         leadCountEl.textContent = '0';
-        readyCountEl.textContent = '0';
         leadFilterSummary.textContent = '0 leads shown';
         leadPageLabel.textContent = 'Page 1';
         leadPrevPageBtn.disabled = true;
         leadNextPageBtn.disabled = true;
         updateSelectionCount();
+        updateWorkflowProgress();
         return;
       }
 
-      const valid = leads.filter((lead) => lead.email && lead.first_name && lead.firm_name);
       leadCountEl.textContent = String(leads.length);
-      readyCountEl.textContent = String(valid.length);
       leadFilterSummary.textContent = visibleLeads.length === leads.length
         ? `Showing ${pageLeads.length ? pageStart + 1 : 0}–${pageStart + pageLeads.length} of ${leads.length} leads`
         : `Showing ${pageLeads.length ? pageStart + 1 : 0}–${pageStart + pageLeads.length} of ${visibleLeads.length} matching (${leads.length} total)`;
@@ -1529,6 +1690,7 @@
       if (!visibleLeads.length) {
         leadTableBody.innerHTML = '<tr><td colspan="11" class="muted">No leads match the current filters.</td></tr>';
         updateSelectionCount();
+        updateWorkflowProgress();
         return;
       }
 
@@ -1552,6 +1714,7 @@
       }).join('');
 
       updateSelectionCount();
+      updateWorkflowProgress();
     }
 
     function updateSelectionCount() {
@@ -1562,7 +1725,7 @@
         .filter(Boolean);
       selectAllLeadsCheckbox.checked = pageEmails.length > 0 && pageEmails.every((email) => selectedLeadEmails.has(email));
       if (!currentLeads.length) {
-        assignmentHint.textContent = 'Upload or add leads, then click Save leads before assigning them.';
+        assignmentHint.textContent = 'Save leads in Step 1 before assigning them.';
       } else if (!selectedLeadEmails.size) {
         assignmentHint.textContent = 'Select one or more leads to assign.';
       } else if (!assignCampaignSelect.value) {
@@ -1570,6 +1733,7 @@
       } else {
         assignmentHint.textContent = 'Ready to assign selected leads.';
       }
+      updateWorkflowProgress();
     }
 
     function populateCampaignSelect() {
@@ -1752,6 +1916,7 @@
           <textarea class="draft-body" data-draft-key="${entry.bodyKey}" aria-label="${entry.label} body">${(variants && variants[entry.bodyKey]) || ''}</textarea>
         </article>
       `).join('');
+      updateWorkflowProgress();
     }
 
     function saveCampaignDraftsLocally() {
@@ -1806,9 +1971,8 @@
           </article>
         `;
       }).join('');
+      updateWorkflowProgress();
     }
-
-    async function deleteCampaign(campaignId, campaignName) {
       if (!campaignId) {
         setStatus('That campaign cannot be deleted yet because it has no saved ID.', 'error');
         return;
@@ -1852,7 +2016,7 @@
         ? `${campaign.source_documents.length} reference document${campaign.source_documents.length === 1 ? '' : 's'} stored.`
         : 'No reference documents added.';
       campaignStatusInput.value = campaign.status || 'draft';
-      updateCampaignControls();
+      updateWorkflowProgress();
 
       const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
       const restoredDrafts = {};
@@ -1917,7 +2081,7 @@
         campaignStatusInput.value = result.status || 'Saved';
         currentCampaignId = result.id || '';
         saveCampaignDraftsLocally();
-        updateCampaignControls();
+        updateWorkflowProgress();
         await loadSavedCampaigns();
         setStatus(`Campaign saved with ${result.savedDraftCount || 0} draft variants.`, 'success');
       } catch (error) {
@@ -1926,23 +2090,28 @@
     }
 
     async function prepareLaunch() {
+      updateLaunchChecklist();
       if (!currentCampaignId) {
-        setStatus('Save the campaign before preparing its launch.', 'error');
+        setStatus('Save the campaign in Step 3 before preparing launch.', 'error');
         return;
       }
 
-      if (!currentLeads.length) {
-        setStatus('Add or upload leads before preparing the launch.', 'error');
+      if (!campaignHasAssignedLeads()) {
+        setStatus('Assign leads to this campaign in Step 2 before preparing launch.', 'error');
         return;
       }
 
-      const draftCount = ['subject1', 'subject2', 'subject3'].filter((key) => currentDrafts[key] && currentDrafts[key.replace('subject', 'body')]).length;
-      if (draftCount !== 3) {
-        setStatus('Generate and review all three campaign variants first.', 'error');
+      if (countDraftVariants() !== 3) {
+        setStatus('Generate and review all three email variants in Step 3 first.', 'error');
         return;
       }
 
-      setStatus('Validating campaign and preparing a paused launch job...', '');
+      if (!senderMailboxInput.value.trim()) {
+        setStatus('Enter the sending mailbox before preparing launch.', 'error');
+        return;
+      }
+
+      setStatus('Preparing a paused launch. No emails will be sent yet...', '');
 
       try {
         const response = await fetch('/.netlify/functions/prepare-launch', {
@@ -1952,7 +2121,7 @@
             campaignId: currentCampaignId,
             platform: launchPlatformInput.value,
             senderMailbox: senderMailboxInput.value,
-            personalizationMode: personalizationModeInput.value,
+            personalizationMode: personalizationModeInput.value || 'Email only',
             leads: currentLeads,
             drafts: currentDrafts
           })
@@ -1960,8 +2129,10 @@
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Could not prepare launch');
 
-        campaignStatusInput.value = 'Approved - paused';
-        setStatus(`Launch prepared for ${result.platform}. It is paused until final provider activation.`, 'success');
+        campaignStatusInput.value = 'Ready - paused';
+        await loadSavedCampaigns();
+        setStatus(`Launch prepared for ${result.platform}. Activate it in ${result.platform} when you are ready to send.`, 'success');
+        updateWorkflowProgress();
       } catch (error) {
         setStatus(error.message || 'Could not prepare launch.', 'error');
       }
@@ -2010,7 +2181,7 @@
       documentList.textContent = 'No reference documents added.';
       renderDrafts({});
       saveCampaignDraftsLocally();
-      updateCampaignControls();
+      updateWorkflowProgress();
       setStatus('New campaign ready. Add a brief, reference material, and generate copy.', 'success');
     }
 
@@ -2098,7 +2269,6 @@
     generateCampaignBtn.addEventListener('click', () => withButtonBusy(generateCampaignBtn, generateCampaignDrafts, 'Generating AI copy...'));
 
     saveLeadsBtn.addEventListener('click', () => withButtonBusy(saveLeadsBtn, saveLeadsToSupabase, 'Saving leads...'));
-    generateDraftsBtn.addEventListener('click', () => withButtonBusy(generateDraftsBtn, generateCampaignDrafts, 'Generating drafts...'));
     manualLeadForm.addEventListener('submit', (event) => {
       event.preventDefault();
       withButtonBusy(document.getElementById('addLeadBtn'), () => addManualLead(event), 'Adding lead...');
@@ -2170,17 +2340,21 @@
       renderRows(currentLeads);
     });
     searchApolloBtn.addEventListener('click', () => withButtonBusy(searchApolloBtn, searchApollo, 'Searching Apollo...'));
-    holdApolloBtn.addEventListener('click', () => withButtonBusy(holdApolloBtn, holdSelectedApolloLeads, 'Holding prospects...'));
-    enrichApolloBtn.addEventListener('click', () => withButtonBusy(enrichApolloBtn, enrichSelectedApolloLeads, 'Enriching prospects...'));
+    holdApolloBtn.addEventListener('click', () => withButtonBusy(holdApolloBtn, holdSelectedApolloLeads, 'Keeping prospects...'));
+    enrichApolloBtn.addEventListener('click', () => withButtonBusy(enrichApolloBtn, enrichSelectedApolloLeads, 'Looking up emails...'));
     importApolloBtn.addEventListener('click', () => withButtonBusy(importApolloBtn, importSelectedApolloLeads, 'Importing prospects...'));
     clearApolloQueueBtn.addEventListener('click', () => {
       apolloHeldLeads = [];
       persistApolloQueue();
-      setApolloStatus('Held prospect queue cleared.', 'success');
+      setApolloStatus('Saved-for-import list cleared.', 'success');
     });
-    draftGrid.addEventListener('input', updateDraftValue);
+    draftGrid.addEventListener('input', (event) => {
+      updateDraftValue(event);
+      updateWorkflowProgress();
+    });
     saveCampaignBtn.addEventListener('click', () => withButtonBusy(saveCampaignBtn, saveCampaignToSupabase, 'Saving campaign...'));
     prepareLaunchBtn.addEventListener('click', () => withButtonBusy(prepareLaunchBtn, prepareLaunch, 'Preparing launch...'));
+    senderMailboxInput.addEventListener('input', updateLaunchChecklist);
     campaignList.addEventListener('click', (event) => {
       const reviewButton = event.target.closest('.review-campaign-btn');
       if (reviewButton) {
@@ -2214,8 +2388,7 @@
     renderApolloQueue();
     loadSavedCampaigns();
     loadLeadHub();
-    [campaignSegmentInput, campaignCtaInput, personalizationModeInput].forEach((input) => input.addEventListener('input', updateCampaignControls));
-    updateCampaignControls();
+    updateWorkflowProgress();
   </script>
 </body>
 </html>
