@@ -963,6 +963,8 @@
     let savedCampaigns = [];
     let apolloSearchResults = [];
     let apolloHeldLeads = JSON.parse(localStorage.getItem('cyrisk-apollo-held-leads') || '[]');
+    let apolloSearchPage = 0;
+    let apolloLastSearchKey = '';
     let selectedLeadEmails = new Set();
     let leadHubFilter = '';
 
@@ -1017,22 +1019,32 @@
     }
 
     async function searchApollo() {
+      const titles = apolloTitlesInput.value.split(',').map((value) => value.trim()).filter(Boolean);
+      const keywords = apolloKeywordsInput.value.trim();
+      const perPage = Number(apolloResultCountInput.value);
+      const maxPerCompany = Number(apolloCompanyLimitInput.value);
+      const searchKey = JSON.stringify({ titles, keywords, perPage, maxPerCompany });
+      apolloSearchPage = searchKey === apolloLastSearchKey ? apolloSearchPage + 1 : 1;
+      apolloLastSearchKey = searchKey;
       setApolloStatus('Searching Apollo...', '');
       try {
         const response = await fetch('/.netlify/functions/search-apollo', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            titles: apolloTitlesInput.value.split(',').map((value) => value.trim()).filter(Boolean),
-            keywords: apolloKeywordsInput.value,
-            perPage: Number(apolloResultCountInput.value),
-            maxPerCompany: Number(apolloCompanyLimitInput.value)
+            titles,
+            keywords,
+            perPage,
+            maxPerCompany,
+            page: apolloSearchPage
           })
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Apollo search failed');
-        apolloSearchResults = Array.isArray(result.people) ? result.people : [];
+        const heldIds = new Set(apolloHeldLeads.map((lead) => lead.apollo_contact_id));
+        apolloSearchResults = (Array.isArray(result.people) ? result.people : [])
+          .filter((lead) => lead.apollo_contact_id && !heldIds.has(lead.apollo_contact_id));
         renderApolloResults();
-        setApolloStatus(`${apolloSearchResults.length} Apollo prospects ready for review. Select prospects and click Hold selected to keep them while you search again.`, 'success');
+        setApolloStatus(`${apolloSearchResults.length} new Apollo prospects from page ${apolloSearchPage}. Select prospects and click Hold selected to keep them while you search again.`, 'success');
       } catch (error) {
         setApolloStatus(error.message || 'Apollo search failed.', 'error');
       }
