@@ -374,7 +374,7 @@
         </div>
         <div>
           <h3 style="margin:0 0 10px; font-size:16px;">Launch queue</h3>
-          <p class="muted" style="margin:0 0 12px;">Recent prepared jobs for this session.</p>
+          <p class="muted" style="margin:0 0 12px;">Prepared jobs for the campaign open in this workflow. Browse all history in the Launches hub.</p>
           <div class="hub-actions" style="margin-bottom:12px;">
             <button id="openLaunchesLibraryBtn" class="secondary-btn" type="button">Open Launches queue</button>
           </div>
@@ -561,7 +561,11 @@
       const hasLeads = currentLeads.length > 0;
       const hasReviewedSelection = selectedLeadEmails.size > 0 || currentLeads.length > 0;
       const hasCampaignReady = Boolean(currentCampaignId) && countDraftVariants() === 3;
-      const hasLaunch = savedCampaigns.some((campaign) => Array.isArray(campaign.send_jobs) && campaign.send_jobs.length > 0);
+      const hasLaunch = Boolean(currentCampaignId) && savedCampaigns.some((campaign) => (
+        campaign.id === currentCampaignId
+        && Array.isArray(campaign.send_jobs)
+        && campaign.send_jobs.length > 0
+      ));
 
       const steps = [
         { el: progressStep1, complete: hasLeads },
@@ -1706,9 +1710,15 @@
     }
 
     function renderLaunchQueue() {
-      const jobs = savedCampaigns.flatMap((campaign) => (campaign.send_jobs || []).map((job) => ({ ...job, campaignName: campaign.name })));
+      const jobs = currentCampaignId
+        ? savedCampaigns
+          .filter((campaign) => campaign.id === currentCampaignId)
+          .flatMap((campaign) => (campaign.send_jobs || []).map((job) => ({ ...job, campaignName: campaign.name })))
+        : [];
       if (!jobs.length) {
-        launchList.innerHTML = '<p class="muted">No launch jobs prepared yet.</p>';
+        launchList.innerHTML = currentCampaignId
+          ? '<p class="muted">No launch jobs for this campaign yet.</p>'
+          : '<p class="muted">No launch jobs yet. Save a campaign and prepare launch to see jobs here. Past launches stay in the Launches hub.</p>';
         return;
       }
 
@@ -2234,8 +2244,10 @@
       renderRows([]);
       resetCampaignBuilder({ scrollToTop: false, persistDraft: false });
       localStorage.removeItem(DRAFTS_KEY);
+      if (launchPlatformInput) launchPlatformInput.value = 'apollo';
       setAssignPanelStatus('');
       setLaunchPanelStatus('');
+      renderLaunchQueue();
       updateSelectionCount();
       updateWorkflowProgress();
     }
