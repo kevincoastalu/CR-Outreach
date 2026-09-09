@@ -13,12 +13,12 @@
     <section class="card panel" style="margin-bottom:24px;">
       <div class="hub-heading">
         <h2>Leads</h2>
-        <span class="info-tip" tabindex="0" role="img" aria-label="About leads" data-tip="This is your lead CRM. Search, filter, edit, and organize prospects here. Select people, then open that campaign in Campaign workflow to attach them before launch.">i</span>
+        <span class="info-tip" tabindex="0" role="img" aria-label="About leads" data-tip="This is your lead CRM. Search, filter, edit, and assign prospects to campaigns here. Use Campaign workflow to create new outreach.">i</span>
       </div>
-      <p class="page-intro">Review and organize every prospect in one place. To attach existing leads to a campaign, select them here, open that campaign in the workflow, and assign—assignment always goes to the campaign you have open, not a picker list.</p>
+      <p class="page-intro">Review and organize every prospect in one place. Select leads and assign them to a campaign in bulk, or open Edit lead to add one person to a campaign.</p>
       <div class="hub-actions">
         <a class="primary-btn" href="index.html#get-leads" style="display:inline-block; text-decoration:none;">Add leads in workflow</a>
-        <a class="secondary-btn" href="index.html#campaigns-hub" style="display:inline-block; text-decoration:none;">Open campaign workflow</a>
+        <a class="secondary-btn" href="campaigns.html" style="display:inline-block; text-decoration:none;">Open campaigns library</a>
       </div>
       <div id="statusMessage" class="status-message" aria-live="polite"></div>
 
@@ -61,8 +61,12 @@
       <div class="lead-selection-bar">
         <button id="selectAllLeadsBtn" class="secondary-btn" type="button">Select all matching</button>
         <button id="clearLeadSelectionBtn" class="secondary-btn" type="button">Clear selection</button>
+        <select id="bulkAssignCampaignSelect" aria-label="Campaign for selected leads">
+          <option value="">Assign selected to campaign...</option>
+        </select>
+        <button id="bulkAssignBtn" class="primary-btn" type="button">Assign selected</button>
         <span id="selectionCount" class="selection-count">0 leads selected</span>
-        <span id="reviewHint" class="selection-count">Select leads, then continue in Campaign workflow.</span>
+        <span id="reviewHint" class="selection-count">Select leads, then assign them to a campaign.</span>
       </div>
       <div class="lead-meta-row">
         <span id="leadFilterSummary">0 leads shown</span>
@@ -100,7 +104,7 @@
 
     <section class="card panel">
       <h2>Edit lead</h2>
-      <p class="section-intro">Update a prospect’s details, then save. Changes sync to your lead list.</p>
+      <p class="section-intro">Update a prospect’s details, then save. You can also add this person to a campaign below.</p>
       <form id="manualLeadForm" class="manual-lead-form" style="border-top:none; margin-top:0; padding-top:0;">
         <div class="lead-form-grid">
           <input id="manualFirstName" name="first_name" type="text" placeholder="First name" required>
@@ -117,6 +121,16 @@
           <button id="cancelEditBtn" class="secondary-btn" type="button">Cancel edit</button>
         </div>
       </form>
+      <div class="edit-assign-panel">
+        <h3 style="margin:0 0 8px; font-size:15px;">Campaign assignment</h3>
+        <p id="editLeadCampaigns" class="muted" style="margin:0 0 12px;">Select a lead to see and update campaign membership.</p>
+        <div class="lead-selection-bar" style="margin-top:0;">
+          <select id="editAssignCampaignSelect" aria-label="Campaign for this lead" disabled>
+            <option value="">Choose campaign...</option>
+          </select>
+          <button id="editAssignBtn" class="primary-btn" type="button" disabled>Add to campaign</button>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -144,6 +158,11 @@
     const selectAllLeadsCheckbox = document.getElementById('selectAllLeadsCheckbox');
     const selectionCount = document.getElementById('selectionCount');
     const reviewHint = document.getElementById('reviewHint');
+    const bulkAssignCampaignSelect = document.getElementById('bulkAssignCampaignSelect');
+    const bulkAssignBtn = document.getElementById('bulkAssignBtn');
+    const editAssignCampaignSelect = document.getElementById('editAssignCampaignSelect');
+    const editAssignBtn = document.getElementById('editAssignBtn');
+    const editLeadCampaigns = document.getElementById('editLeadCampaigns');
     const manualLeadForm = document.getElementById('manualLeadForm');
     const addLeadBtn = document.getElementById('addLeadBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
@@ -207,9 +226,35 @@
       const pageEmails = getFilteredSortedLeads().slice((leadPage - 1) * LEAD_PAGE_SIZE, leadPage * LEAD_PAGE_SIZE).map(leadEmailKey).filter(Boolean);
       selectAllLeadsCheckbox.checked = pageEmails.length > 0 && pageEmails.every((email) => selectedLeadEmails.has(email));
       if (!currentLeads.length) reviewHint.textContent = 'No leads yet. Add them from Campaign workflow.';
-      else if (!selectedLeadEmails.size) reviewHint.textContent = 'Select leads to use in a campaign, or edit one below.';
-      else reviewHint.textContent = `${selectedLeadEmails.size} selected. Open Campaign workflow to assign them.`;
+      else if (!savedCampaigns.length) reviewHint.textContent = 'Save a campaign first, then assign leads here.';
+      else if (!selectedLeadEmails.size) reviewHint.textContent = 'Select leads to assign in bulk, or edit one below.';
+      else reviewHint.textContent = `${selectedLeadEmails.size} selected. Choose a campaign and click Assign selected.`;
       persistSelection();
+    }
+
+    function campaignOptionsHtml(placeholder) {
+      if (!savedCampaigns.length) {
+        return `<option value="">${escapeHtml(placeholder || 'No campaigns yet')}</option>`;
+      }
+      return `<option value="">${escapeHtml(placeholder || 'Choose campaign...')}</option>`
+        + savedCampaigns.map((campaign) => `<option value="${escapeHtml(campaign.id || '')}">${escapeHtml(campaign.name || 'Untitled campaign')}</option>`).join('');
+    }
+
+    function populateCampaignAssignSelects() {
+      const bulkValue = bulkAssignCampaignSelect.value;
+      const editValue = editAssignCampaignSelect.value;
+      bulkAssignCampaignSelect.innerHTML = campaignOptionsHtml('Assign selected to campaign...');
+      editAssignCampaignSelect.innerHTML = campaignOptionsHtml('Choose campaign...');
+      if ([...bulkAssignCampaignSelect.options].some((option) => option.value === bulkValue)) {
+        bulkAssignCampaignSelect.value = bulkValue;
+      }
+      if ([...editAssignCampaignSelect.options].some((option) => option.value === editValue)) {
+        editAssignCampaignSelect.value = editValue;
+      }
+      const hasCampaigns = savedCampaigns.length > 0;
+      bulkAssignBtn.disabled = !hasCampaigns;
+      bulkAssignCampaignSelect.disabled = !hasCampaigns;
+      updateEditAssignControls();
     }
 
     function populateAssignmentFilter() {
@@ -222,6 +267,77 @@
       ].join('');
       leadAssignmentFilterInput.value = [...leadAssignmentFilterInput.options].some((option) => option.value === previous) ? previous : '';
       leadAssignmentFilter = leadAssignmentFilterInput.value;
+      populateCampaignAssignSelects();
+    }
+
+    function updateEditAssignControls() {
+      const hasLead = Boolean(editingLeadEmail);
+      const hasCampaigns = savedCampaigns.length > 0;
+      editAssignCampaignSelect.disabled = !hasLead || !hasCampaigns;
+      editAssignBtn.disabled = !hasLead || !hasCampaigns;
+      if (!hasLead) {
+        editLeadCampaigns.textContent = 'Select a lead to see and update campaign membership.';
+        return;
+      }
+      const lead = currentLeads.find((item) => leadEmailKey(item) === editingLeadEmail);
+      const names = lead ? leadCampaignNames(lead) : [];
+      editLeadCampaigns.textContent = names.length
+        ? `Currently in: ${names.join(', ')}`
+        : 'Currently unassigned. Choose a campaign to add this lead.';
+    }
+
+    async function assignEmailsToCampaign(emails, campaignId) {
+      const response = await fetch('/.netlify/functions/assign-campaign-leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId, emails })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not assign leads');
+      return result;
+    }
+
+    async function bulkAssignSelected() {
+      const campaignId = bulkAssignCampaignSelect.value;
+      if (!campaignId) {
+        setStatus(statusMessage, 'Choose a campaign for the selected leads.', 'error');
+        return;
+      }
+      if (!selectedLeadEmails.size) {
+        setStatus(statusMessage, 'Select at least one lead first.', 'error');
+        return;
+      }
+
+      const campaignName = savedCampaigns.find((campaign) => campaign.id === campaignId)?.name || 'campaign';
+      setStatus(statusMessage, `Assigning ${selectedLeadEmails.size} lead${selectedLeadEmails.size === 1 ? '' : 's'} to ${campaignName}...`, '');
+      const result = await assignEmailsToCampaign([...selectedLeadEmails], campaignId);
+      selectedLeadEmails.clear();
+      persistSelection();
+      await loadData();
+      setStatus(statusMessage, `Assigned ${result.assigned} lead${result.assigned === 1 ? '' : 's'} to ${campaignName}.`, 'success');
+    }
+
+    async function assignEditingLead() {
+      if (!editingLeadEmail) {
+        setStatus(statusMessage, 'Choose a lead to edit first.', 'error');
+        return;
+      }
+      const campaignId = editAssignCampaignSelect.value;
+      if (!campaignId) {
+        setStatus(statusMessage, 'Choose a campaign for this lead.', 'error');
+        return;
+      }
+
+      const campaignName = savedCampaigns.find((campaign) => campaign.id === campaignId)?.name || 'campaign';
+      setStatus(statusMessage, `Adding lead to ${campaignName}...`, '');
+      const result = await assignEmailsToCampaign([editingLeadEmail], campaignId);
+      const keepEditing = editingLeadEmail;
+      await loadData();
+      editLead(keepEditing);
+      if (editAssignCampaignSelect.querySelector(`option[value="${campaignId}"]`)) {
+        editAssignCampaignSelect.value = campaignId;
+      }
+      setStatus(statusMessage, `Added lead to ${campaignName}.`, 'success');
     }
 
     function renderRows(leads) {
@@ -292,6 +408,7 @@
       manualLeadForm.city.value = lead.city || '';
       manualLeadForm.state.value = lead.state || '';
       addLeadBtn.textContent = 'Save lead';
+      updateEditAssignControls();
       setStatus(statusMessage, `Editing ${lead.email}.`, '');
       manualLeadForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -300,6 +417,7 @@
       editingLeadEmail = '';
       manualLeadForm.reset();
       addLeadBtn.textContent = 'Save lead';
+      updateEditAssignControls();
       setStatus(statusMessage, 'Edit cancelled.', '');
     }
 
@@ -407,6 +525,8 @@
     leadNextPageBtn.addEventListener('click', () => { leadPage += 1; renderRows(currentLeads); });
     manualLeadForm.addEventListener('submit', (event) => withButtonBusy(addLeadBtn, () => saveLead(event), 'Saving lead...'));
     cancelEditBtn.addEventListener('click', cancelEdit);
+    bulkAssignBtn.addEventListener('click', () => withButtonBusy(bulkAssignBtn, bulkAssignSelected, 'Assigning...'));
+    editAssignBtn.addEventListener('click', () => withButtonBusy(editAssignBtn, assignEditingLead, 'Assigning...'));
 
     const statusParam = new URLSearchParams(window.location.search).get('status');
     if (statusParam) {

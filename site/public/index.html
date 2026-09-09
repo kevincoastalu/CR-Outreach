@@ -280,7 +280,7 @@
 
       <div class="assign-panel" style="margin-top:18px; padding-top:16px; border-top:1px solid var(--border);">
         <h3 style="margin:0 0 8px; font-size:16px;">Assign Step 2 leads to this campaign</h3>
-        <p class="muted" style="margin:0 0 12px;">Uses the leads you checked in Step 2. They attach only to the campaign you are writing above—not to other campaigns. To manage leads across campaigns later, use the <a href="leads.html" style="color:var(--accent);">Leads</a> hub before launch.</p>
+        <p class="muted" style="margin:0 0 12px;">Uses the leads you checked in Step 2. They attach only to the campaign you are writing above. To assign other existing leads to any campaign, use the <a href="leads.html" style="color:var(--accent);">Leads</a> hub.</p>
         <p id="assignTargetLabel" class="selection-count" style="margin:0 0 12px;">Campaign target: save this campaign first.</p>
         <div class="lead-selection-bar">
           <button id="assignLeadsBtn" class="primary-btn" type="button">Assign selected leads to this campaign</button>
@@ -288,15 +288,7 @@
           <span id="assignmentHint" class="selection-count">Save this campaign before assigning leads.</span>
         </div>
       </div>
-
-      <div>
-        <div class="hub-heading" style="margin-top:16px;">
-          <h3 style="margin:0; font-size:16px;">Open a saved campaign</h3>
-          <a href="campaigns.html" class="muted" style="margin-left:auto; font-size:13px; color:var(--accent);">Open campaigns library</a>
-        </div>
-        <p class="muted" style="margin:0 0 10px;">Load a past campaign here to edit its copy or prepare launch. Lead assignment in this step always goes to the campaign loaded above.</p>
-        <div id="campaignList" class="campaign-list"></div>
-      </div>
+      <p class="muted" style="margin-top:14px;">Need a past campaign? Open it from the <a href="campaigns.html" style="color:var(--accent);">Campaigns</a> library.</p>
     </section>
 
     <section id="prepare-launch" class="card panel" style="margin-bottom:24px;">
@@ -356,7 +348,6 @@
     const generateCampaignBtn = document.getElementById('generateCampaignBtn');
     const saveCampaignBtn = document.getElementById('saveCampaignBtn');
     const campaignStatusInput = document.getElementById('campaignStatus');
-    const campaignList = document.getElementById('campaignList');
     const launchPlatformInput = document.getElementById('launchPlatform');
     const personalizationModeInput = document.getElementById('personalizationMode');
     const prepareLaunchBtn = document.getElementById('prepareLaunchBtn');
@@ -1200,67 +1191,7 @@
       savedCampaigns = items || [];
       populateCampaignSelect();
       renderLaunchQueue();
-      if (!items || !items.length) {
-        campaignList.innerHTML = '<div class="mini-campaign"><h3>No campaigns yet</h3><p>Save a campaign to create your first draft record.</p></div>';
-        return;
-      }
-
-      campaignList.innerHTML = items.map((campaign) => {
-        const drafts = Array.isArray(campaign.email_drafts) ? campaign.email_drafts.slice(0, 3) : [];
-        const preview = drafts.length ? drafts.map((draft) => `<p><strong>${draft.subject_line || 'Draft'}</strong><br>${(draft.body_text || '').slice(0, 90)}${(draft.body_text || '').length > 90 ? '...' : ''}</p>`).join('') : '<p>No drafted copy stored yet.</p>';
-        const latestJob = Array.isArray(campaign.send_jobs) && campaign.send_jobs.length ? campaign.send_jobs[0] : null;
-        const assignedLeadCount = Array.isArray(campaign.campaign_leads) ? campaign.campaign_leads.length : 0;
-
-        return `
-          <article class="mini-campaign">
-            <h3>${(campaign.name || 'Untitled campaign').replace(/</g, '&lt;')}</h3>
-            <p>${(campaign.objective || 'No objective set.').replace(/</g, '&lt;')}</p>
-            <p><strong>Segment:</strong> ${(campaign.target_segment || 'N/A').replace(/</g, '&lt;')}</p>
-            <p><strong>Assigned leads:</strong> ${assignedLeadCount}</p>
-            <div class="tag">${(campaign.status || 'draft')}</div>
-            ${preview}
-            <p><strong>Launch:</strong> ${latestJob ? `${latestJob.platform} / ${latestJob.status}` : 'Not prepared'}</p>
-            <div class="mini-campaign-actions">
-              <button class="secondary-btn review-campaign-btn" type="button" data-campaign-id="${escapeHtml(campaign.id || '')}" data-campaign-index="${items.indexOf(campaign)}">Review / relaunch</button>
-              <a class="secondary-btn" href="campaigns.html" style="display:inline-block; text-decoration:none;">Library</a>
-              <button class="secondary-btn danger-btn delete-campaign-btn" type="button" data-campaign-id="${escapeHtml(campaign.id || '')}" data-campaign-name="${escapeHtml(campaign.name || 'Untitled campaign')}">Delete</button>
-            </div>
-          </article>
-        `;
-      }).join('');
       updateWorkflowProgress();
-    }
-
-    async function deleteCampaign(campaignId, campaignName) {
-      if (!campaignId) {
-        setStatus('That campaign cannot be deleted yet because it has no saved ID.', 'error');
-        return;
-      }
-
-      const confirmed = window.confirm(`Delete "${campaignName || 'this campaign'}"? Assigned leads stay in Leads Hub, but campaign copy and launch jobs for this campaign will be removed.`);
-      if (!confirmed) return;
-
-      setStatus('Deleting campaign...', '');
-      try {
-        const response = await fetch('/.netlify/functions/delete-campaign', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ campaignId })
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Could not delete campaign');
-
-        if (currentCampaignId === campaignId) resetCampaignBuilder();
-        await loadSavedCampaigns();
-        await loadLeadHub();
-        setStatus(`Deleted campaign${result.name ? `: ${result.name}` : ''}.`, 'success');
-      } catch (error) {
-        setStatus(error.message || 'Could not delete campaign.', 'error');
-      }
-    }
-
-    function reviewCampaign(indexOrId) {
-      return hydrateCampaign(indexOrId);
     }
 
     async function hydrateCampaign(indexOrId) {
@@ -1701,18 +1632,6 @@
     });
     saveCampaignBtn.addEventListener('click', () => withButtonBusy(saveCampaignBtn, saveCampaignToSupabase, 'Saving campaign...'));
     prepareLaunchBtn.addEventListener('click', () => withButtonBusy(prepareLaunchBtn, prepareLaunch, 'Preparing launch...'));
-    campaignList.addEventListener('click', (event) => {
-      const reviewButton = event.target.closest('.review-campaign-btn');
-      if (reviewButton) {
-        withButtonBusy(reviewButton, () => reviewCampaign(reviewButton.dataset.campaignId || Number(reviewButton.dataset.campaignIndex)), 'Loading...');
-        return;
-      }
-
-      const deleteButton = event.target.closest('.delete-campaign-btn');
-      if (deleteButton) {
-        withButtonBusy(deleteButton, () => deleteCampaign(deleteButton.dataset.campaignId, deleteButton.dataset.campaignName), 'Deleting...');
-      }
-    });
 
     async function bootstrapWorkflow() {
       const campaignId = new URLSearchParams(window.location.search).get('campaign');
