@@ -29,6 +29,11 @@
       <a class="workflow-step" id="progressStep4" href="#prepare-launch"><span class="step-num">4</span><span>Prepare launch</span></a>
     </nav>
 
+    <div class="hub-actions workflow-page-actions">
+      <a class="primary-btn" href="index.html?new=1" id="createNewCampaignTopBtn">Create new campaign</a>
+      <a class="secondary-btn" href="campaigns.html">Browse Campaigns</a>
+    </div>
+
     <section class="summary-grid">
       <a class="card metric metric-card" href="leads.html">
         <div class="metric-label">Total leads</div>
@@ -318,7 +323,7 @@
           <div class="action-row">
             <button id="generateCampaignBtn" class="primary-btn" type="button">Generate AI copy</button>
             <button id="saveCampaignBtn" class="secondary-btn" type="button">Save campaign</button>
-            <button id="newCampaignBtn" class="secondary-btn" type="button">New campaign</button>
+            <button id="newCampaignBtn" class="secondary-btn" type="button">Create new campaign</button>
           </div>
         </div>
       </div>
@@ -2180,7 +2185,7 @@
       }
     }
 
-    function resetCampaignBuilder() {
+    function resetCampaignBuilder({ scrollToTop = false } = {}) {
       currentCampaignId = '';
       currentDrafts = {};
       campaignNameInput.value = 'New campaign';
@@ -2197,7 +2202,10 @@
       saveCampaignDraftsLocally();
       updateAssignTargetLabel();
       updateWorkflowProgress();
-      setStatus('New campaign ready. Add a brief, reference material, and generate copy.', 'success');
+      setStatus('New campaign ready. Start at Step 1, then write and save in Step 3.', 'success');
+      if (scrollToTop) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
 
     async function readCampaignDocuments(event) {
@@ -2298,7 +2306,9 @@
     });
 
     campaignDocumentsInput.addEventListener('change', readCampaignDocuments);
-    newCampaignBtn.addEventListener('click', () => resetCampaignBuilder());
+    newCampaignBtn.addEventListener('click', () => {
+      window.location.assign('index.html?new=1');
+    });
     generateCampaignBtn.addEventListener('click', () => withButtonBusy(generateCampaignBtn, generateCampaignDrafts, 'Generating AI copy...'));
 
     saveLeadsBtn.addEventListener('click', () => withButtonBusy(saveLeadsBtn, saveLeadsToSupabase, 'Saving leads...'));
@@ -2468,15 +2478,15 @@
       const startNew = params.get('new') === '1';
 
       if (startNew) {
-        resetCampaignBuilder();
+        resetCampaignBuilder({ scrollToTop: false });
         loadFromStorage();
         renderApolloQueue();
         await loadSavedCampaigns({ autoOpenFromUrl: false });
         await loadLeadHub();
         updateWorkflowProgress();
         updateExistingLeadsCtas();
-        setStatus('New campaign ready. Add a brief, generate copy, then save.', 'success');
-        document.getElementById('campaigns-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setStatus('New campaign ready. Start at Step 1 with leads, then write and save in Step 3.', 'success');
+        window.scrollTo({ top: 0, behavior: 'auto' });
         return;
       }
 

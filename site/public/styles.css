@@ -517,6 +517,10 @@
       margin: 0 0 16px;
     }
 
+    .workflow-page-actions {
+      margin: 0 0 18px;
+    }
+
     .hub-actions .primary-btn,
     .hub-actions .secondary-btn {
       margin: 0;
