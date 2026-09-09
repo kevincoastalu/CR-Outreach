@@ -413,6 +413,30 @@
       box-shadow: var(--shadow);
     }
 
+    .lead-selection-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .lead-selection-bar select {
+      min-width: 220px;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: white;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .selection-count {
+      color: var(--muted);
+      font-size: 13px;
+      margin-right: auto;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -744,10 +768,20 @@
 
     <section class="card panel" style="margin-bottom:24px;">
       <h2>Lead preview</h2>
+      <div class="lead-selection-bar">
+        <button id="selectAllLeadsBtn" class="secondary-btn" type="button">Select all visible</button>
+        <button id="clearLeadSelectionBtn" class="secondary-btn" type="button">Clear selection</button>
+        <select id="assignCampaignSelect" aria-label="Campaign to assign selected leads to">
+          <option value="">Choose campaign...</option>
+        </select>
+        <button id="assignLeadsBtn" class="primary-btn" type="button">Assign selected</button>
+        <span id="selectionCount" class="selection-count">0 leads selected</span>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th><input id="selectAllLeadsCheckbox" type="checkbox" aria-label="Select all visible leads"></th>
               <th>First name</th>
               <th>Last name</th>
               <th>Email</th>
@@ -759,7 +793,7 @@
           </thead>
           <tbody id="leadTableBody">
             <tr>
-              <td colspan="7" class="muted">No lead CSV uploaded yet.</td>
+              <td colspan="8" class="muted">No lead CSV uploaded yet.</td>
             </tr>
           </tbody>
         </table>
@@ -798,6 +832,12 @@
     const importApolloBtn = document.getElementById('importApolloBtn');
     const apolloStatus = document.getElementById('apolloStatus');
     const apolloResults = document.getElementById('apolloResults');
+    const selectAllLeadsBtn = document.getElementById('selectAllLeadsBtn');
+    const clearLeadSelectionBtn = document.getElementById('clearLeadSelectionBtn');
+    const selectAllLeadsCheckbox = document.getElementById('selectAllLeadsCheckbox');
+    const assignCampaignSelect = document.getElementById('assignCampaignSelect');
+    const assignLeadsBtn = document.getElementById('assignLeadsBtn');
+    const selectionCount = document.getElementById('selectionCount');
 
     const STORAGE_KEY = 'cyrisk-outreach-leads';
     const DRAFTS_KEY = 'cyrisk-outreach-drafts';
@@ -806,6 +846,7 @@
     let currentCampaignId = '';
     let savedCampaigns = [];
     let apolloSearchResults = [];
+    let selectedLeadEmails = new Set();
 
     function setApolloStatus(message, type = '') {
       apolloStatus.textContent = message || '';
@@ -974,11 +1015,13 @@
 
     function renderRows(leads) {
       currentLeads = leads;
+      selectedLeadEmails = new Set([...selectedLeadEmails].filter((email) => leads.some((lead) => (lead.email || '').trim().toLowerCase() === email)));
 
       if (!leads.length) {
-        leadTableBody.innerHTML = '<tr><td colspan="7" class="muted">No lead CSV uploaded yet.</td></tr>';
+        leadTableBody.innerHTML = '<tr><td colspan="8" class="muted">No lead CSV uploaded yet.</td></tr>';
         leadCountEl.textContent = '0';
         readyCountEl.textContent = '0';
+        updateSelectionCount();
         return;
       }
 
@@ -986,8 +1029,9 @@
       leadCountEl.textContent = String(leads.length);
       readyCountEl.textContent = String(valid.length);
 
-      leadTableBody.innerHTML = leads.slice(0, 15).map((lead) => `
+      leadTableBody.innerHTML = leads.slice(0, 15).map((lead, index) => `
         <tr>
+          <td><input class="lead-select" type="checkbox" data-lead-index="${index}" aria-label="Select ${escapeHtml(lead.email || 'lead')}" ${selectedLeadEmails.has((lead.email || '').trim().toLowerCase()) ? 'checked' : ''}></td>
           <td>${lead.first_name || '-'}</td>
           <td>${lead.last_name || '-'}</td>
           <td>${lead.email || '-'}</td>
@@ -1000,8 +1044,45 @@
 
       if (leads.length > 15) {
         const extraRow = document.createElement('tr');
-        extraRow.innerHTML = '<td colspan="7" class="muted">+ ' + (leads.length - 15) + ' more leads loaded</td>';
+        extraRow.innerHTML = '<td colspan="8" class="muted">+ ' + (leads.length - 15) + ' more leads loaded</td>';
         leadTableBody.appendChild(extraRow);
+      }
+      updateSelectionCount();
+    }
+
+    function updateSelectionCount() {
+      selectionCount.textContent = `${selectedLeadEmails.size} lead${selectedLeadEmails.size === 1 ? '' : 's'} selected`;
+      const visibleLeads = currentLeads.slice(0, 15);
+      selectAllLeadsCheckbox.checked = visibleLeads.length > 0 && visibleLeads.every((lead) => selectedLeadEmails.has((lead.email || '').trim().toLowerCase()));
+    }
+
+    function populateCampaignSelect() {
+      assignCampaignSelect.innerHTML = '<option value="">Choose campaign...</option>' + savedCampaigns.map((campaign) => `<option value="${campaign.id}">${escapeHtml(campaign.name || 'Untitled campaign')}</option>`).join('');
+      if (currentCampaignId) assignCampaignSelect.value = currentCampaignId;
+    }
+
+    async function assignSelectedLeads() {
+      const campaignId = assignCampaignSelect.value;
+      if (!campaignId) {
+        setStatus('Choose a campaign before assigning leads.', 'error');
+        return;
+      }
+      if (!selectedLeadEmails.size) {
+        setStatus('Select at least one lead first.', 'error');
+        return;
+      }
+
+      setStatus('Assigning selected leads to the campaign...', '');
+      try {
+        const response = await fetch('/.netlify/functions/assign-campaign-leads', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaignId, emails: [...selectedLeadEmails] })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not assign leads');
+        setStatus(`Assigned ${result.assigned} selected leads to the campaign.`, 'success');
+      } catch (error) {
+        setStatus(error.message || 'Could not assign leads.', 'error');
       }
     }
 
@@ -1043,6 +1124,12 @@
           throw new Error(result.error || 'Unknown error');
         }
 
+        if (Array.isArray(result.leads)) {
+          const savedByEmail = new Map(result.leads.map((lead) => [(lead.email || '').toLowerCase(), lead]));
+          currentLeads = currentLeads.map((lead) => savedByEmail.get((lead.email || '').toLowerCase()) || lead);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLeads));
+          renderRows(currentLeads);
+        }
         setStatus(`Saved ${result.count} leads successfully.`, 'success');
       } catch (error) {
         setStatus(error.message || 'Could not save leads.', 'error');
@@ -1087,6 +1174,7 @@
 
     function renderCampaignList(items) {
       savedCampaigns = items || [];
+      populateCampaignSelect();
       if (!items || !items.length) {
         campaignList.innerHTML = '<div class="mini-campaign"><h3>No campaigns yet</h3><p>Save a campaign to create your first draft record.</p></div>';
         return;
@@ -1303,6 +1391,37 @@
     saveLeadsBtn.addEventListener('click', saveLeadsToSupabase);
     generateDraftsBtn.addEventListener('click', generateCampaignDrafts);
     manualLeadForm.addEventListener('submit', addManualLead);
+    leadTableBody.addEventListener('change', (event) => {
+      const checkbox = event.target.closest('.lead-select');
+      if (!checkbox) return;
+      const lead = currentLeads[Number(checkbox.dataset.leadIndex)];
+      const email = (lead?.email || '').trim().toLowerCase();
+      if (!email) return;
+      if (checkbox.checked) selectedLeadEmails.add(email);
+      else selectedLeadEmails.delete(email);
+      updateSelectionCount();
+    });
+    selectAllLeadsCheckbox.addEventListener('change', () => {
+      currentLeads.slice(0, 15).forEach((lead) => {
+        const email = (lead.email || '').trim().toLowerCase();
+        if (!email) return;
+        if (selectAllLeadsCheckbox.checked) selectedLeadEmails.add(email);
+        else selectedLeadEmails.delete(email);
+      });
+      renderRows(currentLeads);
+    });
+    selectAllLeadsBtn.addEventListener('click', () => {
+      currentLeads.slice(0, 15).forEach((lead) => {
+        const email = (lead.email || '').trim().toLowerCase();
+        if (email) selectedLeadEmails.add(email);
+      });
+      renderRows(currentLeads);
+    });
+    clearLeadSelectionBtn.addEventListener('click', () => {
+      selectedLeadEmails.clear();
+      renderRows(currentLeads);
+    });
+    assignLeadsBtn.addEventListener('click', assignSelectedLeads);
     searchApolloBtn.addEventListener('click', searchApollo);
     enrichApolloBtn.addEventListener('click', enrichSelectedApolloLeads);
     importApolloBtn.addEventListener('click', importSelectedApolloLeads);
